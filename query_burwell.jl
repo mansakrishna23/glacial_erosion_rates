@@ -15,7 +15,7 @@
 
 
 ## --- Load data
-    data = importdataset("main.csv", ',', importas=:Tuple)
+    data = importdataset("data/glacial_erosion.tsv", '\t', importas=:Tuple)
 
     # Get locations, only query each unique location once
     loc = [(data.Latitude[i], data.Longitude[i]) for i in eachindex(data.Latitude)]
