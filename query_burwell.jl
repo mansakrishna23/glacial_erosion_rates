@@ -55,4 +55,7 @@
     # Save data as a .csv
     writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
 
+## --- Parse responses into useable data
+    
+
 ## --- End of file
