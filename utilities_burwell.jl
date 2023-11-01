@@ -10,18 +10,10 @@
     Argument `zoom` controls precision; default is approximately 5km. Automatically retry with
     less precise window if initial query does not return data.
     """
-    function query_macrostrat(lat, lon, zoom::Number=11)
+    function query_macrostrat(lat, lon, zoom::Number=1)
         resp = HTTP.get("https://macrostrat.org/api/mobile/map_query?lat=$lat&lng=$lon&z=$zoom")
         str = String(resp.body)
-        parsed = JSON.Parser.parse(str)
-        try
-            parsed["success"]["data"]["burwell"][1]["lith"]
-        catch error
-            resp = HTTP.get("https://macrostrat.org/api/mobile/map_query?lat=$lat&lng=$lon&z=1")
-            str = String(resp.body)
-            parsed = JSON.Parser.parse(str)
-        end
-        return parsed
+        return JSON.Parser.parse(str)
     end
 
 
@@ -123,7 +115,7 @@
     end
 
 
-    ## --- Parse responses
+## --- Parse responses
     function parse_burwell_responses(responses, stop)
         # Preallocate
         rocktype = Array{String}(undef, stop, 1)
