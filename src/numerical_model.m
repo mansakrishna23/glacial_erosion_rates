@@ -15,7 +15,7 @@ N = 1000; % number of independent model runs
 % cutoff to ensure that start of time series is independent of hiatus length
 cutoff = 500e3; 
 % time scales at which to evalusate erosion rates
-time_scales = sort([10.^(0:6), upper_bound, 4e4, 2e6,4e6]);
+time_scales = sort([10.^(0:6), upper_bound,4e5, 2e6,4e6]);
 %% Example model run
 % Representative time series of erosion magnitude and time before present
 
@@ -31,22 +31,17 @@ erosion_pulses = [zeros(sz),erosion_mag*ones(sz),zeros(sz)]';
 plot(time_erosion(:), erosion_pulses(:),'color','k','LineWidth',1)
 
 xlim([0 t_max])
+ylim([0 12])
+
 xlabel('Time BP [My]')
 ylabel('Erosion [mm]')
-ylim([0 20])
 %% Run model
 % This implementation attempts to follow Ganti et al. (2016) as described
 
 erosion_rates = run_model(N, tail_index, upper_bound, t_max, cutoff, erosion_mag, time_scales);
 
 figure(2)
-
 plot_model(time_scales, erosion_rates, upper_bound)
-
-x = time_scales;
-y = mean(erosion_rates,1,'omitmissing');
-p = polyfit(log10(x(x<upper_bound)),log10(y(x<upper_bound)),1);
-
 
 %% Without counting 0 erosion periods
 % This implementation follows Ganti et al. (2016) but periods with 0 total 
@@ -57,10 +52,6 @@ erosion_rates(erosion_rates==0) = nan;
 
 figure(3)
 plot_model(time_scales, erosion_rates, upper_bound)
-
-x = time_scales;
-y = mean(erosion_rates,1,'omitmissing');
-p = polyfit(log10(x(x<upper_bound)),log10(y(x<upper_bound)),1);
 
 %% Functions
 
@@ -106,13 +97,15 @@ function plot_model(time_scales, erosion_rates, upper_bound)
 
     patch([upper_bound,upper_bound,1e7,1e7],[ylim,flip(ylim)],0.9*[1 1 1],'edgecolor','none')
     line([upper_bound,upper_bound],ylim,'color','k','linewidth',0.75,'linestyle','--')
-    
-    m_er = mean(erosion_rates,1,'omitmissing');
-    max_er = max(erosion_rates,[],1,'omitmissing');
-    min_er = min(erosion_rates,[],1,'omitmissing');
-    
-    plot(time_scales,max_er,'r')
-    plot(time_scales,min_er,'r')
-    
-    scatter(time_scales,m_er,50,'r','filled')
+
+    scatter(time_scales,erosion_rates,10,'r','filled','MarkerFacealpha',0.1)
+    scatter(time_scales,mean(erosion_rates,1,'omitmissing'),50,'r','filled','MarkerEdgeColor','k')
+
+
+    con = time_scales<upper_bound;
+    x = time_scales(con);
+    y = mean(erosion_rates,1,'omitmissing');
+    p = polyfit(log10(x),log10(y(con)),1);
+    f = 10.^polyval(p,log10(x));
+    plot(x,f,'k','linewidth',1)
 end
