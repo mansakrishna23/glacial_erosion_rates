@@ -11,7 +11,7 @@
     using ProgressMeter
 
     # Local utilites
-    include("utilities_burwell.jl")
+    include("lithology_utilities.jl")
 
 
 ## --- Load data
