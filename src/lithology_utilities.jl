@@ -520,7 +520,6 @@
     """
     ```julia
     match_rocktype(rocktype, rockname, rockdescrip; 
-        source::Symbol, 
         [major::Bool], 
         [unmultimatch::Bool])
     ```
