@@ -519,6 +519,41 @@
 ## --- Match Macrostrat responses to usable rock names
     """
     ```julia
+    find_unmatched(cats)
+    ```
+
+    Given a `Tuple` of `BitVectors`, return a `BitVector` that is `true` at index `i` iff 
+    all elements of the `Tuple` are `false` at index `i`.
+
+    If `cats` is a `NamedTuple` of rock types defined by `get_cats`, specify `major` 
+    as `true` or `false` to decrease runtime. `major` is `true` if `cats` contains only 
+    `sed`, `ign`, `met`, and `cover`.
+
+    # Example
+    ```julia-repl
+    julia> find_unmatched(cats)
+    500-element BitVector:
+    0
+    1
+    1
+    1
+    ⋮
+    1
+    1
+    1
+    1
+    ```
+    """
+    function find_unmatched(cats)
+        matched = falses(length(cats[1]))
+        @inbounds for i in eachindex(cats)
+            matched .|= cats[i]
+        end
+        return .!matched
+    end
+
+    """
+    ```julia
     match_rocktype(rocktype, rockname, rockdescrip; 
         [major::Bool], 
         [unmultimatch::Bool])
