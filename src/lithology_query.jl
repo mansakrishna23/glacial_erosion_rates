@@ -11,6 +11,7 @@
     using ProgressMeter
 
     # Local utilites
+    using Static
     include("lithology_utilities.jl")
 
 
@@ -56,6 +57,27 @@
     writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
 
 ## --- Parse responses into useable data
-    
+    # Load responses if you already have them!
+    parsed = importdataset("data/lithology_unparsed.tsv", '\t', importas=:Tuple)
+
+    # Match each to a rock name
+    rock_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
+        major=true, unmultimatch=false, inclusive=true)
+
+    # Convert into a human-readable format
+    rocktypes = Array{String}(undef, npoints)
+    for i in eachindex(rock_cats.sed)
+        rocks = get_type(rock_cats, i, all_keys=true)
+        out = "" 
+
+        if rocks !==nothing
+            for s in rocks
+                out *= (string(s) * ", ")
+            end
+        end
+        rocktypes[i] = out
+    end
+
+    writedlm("data/lithology_parsed.tsv", vcat(["lat" "lon" "type"], hcat(lats, lons, rocktypes)))
 
 ## --- End of file
