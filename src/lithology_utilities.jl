@@ -330,7 +330,7 @@
             ign = (komatiite..., basalt..., andesite..., dacite..., rhyolite..., 
                 alk_volc..., volcaniclast..., volc..., peridotite..., pyroxenite..., 
                 gabbro..., diorite..., trondhjemite..., tonalite..., granodiorite..., 
-                granite..., alk_plut..., plut..., )
+                granite..., alk_plut..., plut..., carbonatite..., ign...,)
 
             # If only returning major types, do that 
             if major
@@ -353,6 +353,10 @@
             peridotite=peridotite, pyroxenite=pyroxenite, gabbro=gabbro, diorite=diorite, 
             trondhjemite=trondhjemite, tonalite=tonalite, granodiorite=granodiorite, 
             granite=granite, alk_plut=alk_plut, plut=plut, 
+
+            # Igneous
+            carbonatite=carbonatite,
+            ign=ign,
 
             # Metamorphic
             met=met,
