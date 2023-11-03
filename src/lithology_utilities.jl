@@ -194,6 +194,324 @@
     end
 
     
+## --- Definitions that let the lithology matching functions work
+    """
+    ```julia
+    get_rock_class([major::Bool], [inclusive::Bool])
+    ```
+
+    Define sedimentary, igneous, and metamorphic rock types and subtypes. Metamorphic rocks
+    are grouped with their protoliths when possible.
+
+    ### Possible subtypes
+    *  Sedimentary: siliciclastic, shale, carbonate, evaporite, chert, phosphorite, coal,
+        sedimentary (uncategorized)
+    *  Igneous: 
+        *  Volcanic: komatiite, basalt, andesite, dacite, rhyolite, alkaline, 
+            volcaniclastic, volcanic (uncategorized)
+        *  Plutonic: peridotite, pyroxenite, gabbro, diorite, trondhjemite, tonalite, 
+            granodiorite, granite, alkaline, plutonic (uncategorized)
+        *  Carbonatite
+        *  Igneous (uncategorized)
+    * Metamorphic: metamorphic (uncategorized)
+
+    ### Optional kwargs
+        
+        major
+
+    Return only Tuples for sedimentary, metamorphic, and igneous types. Boolean; defaults 
+    to `false`
+
+        inclusive
+
+    Sedimentary, igneous, and metamorphic lists include terms for all included subtypes. 
+    Boolean; defaults to `false` unless `major` is `true`.
+
+    Note that volcanic and plutonic rocks will include all nested volcanic / plutonic 
+    subtypes.
+    """
+    function get_rock_class(; major::Bool=false, inclusive::Bool=false)
+        # Sedimentary
+        siliciclast = ("siliciclast", "conglo", "sand", "psamm", "arenit", "arkos", "silt",
+            "breccia", "quartzite")
+        shale = ("lutite", "mud", "clay", "shale", "wacke", "argillite", "argillaceous", 
+            "flysch", "pelit", "turbidite", "tasmanite", "slate", "phyllite",)
+        carb = ("carbonate", "limestone", "dolo", "marl", "chalk", "coquina", "biogenic", 
+            "travertine", "tavertine", "tufa", "calcarenite", "teravertine", "marble", 
+            "calc silicate", "calcsilicate", "skarn", )
+        evap = ("evaporite", "anhydrite", "gypsum", "trona", "halite", "sylvite", 
+            "salt flat", "caliche", "exhalite")
+        chert = ("chert", "opal", "porcellanite", "diatomite", "novaculite", "iron", 
+            "taconite", "banded iron")
+        phosphorite = ("phosphorite", "phosphate")
+        coal = ("coal", "anthracite", "lignite", "bitumen")
+        sed = ("sediment", "clast", "diamict", "tillite", "stream deposits", 
+            "beach deposits", "terrace",  "marine deposits",  "paleosol", "spiculite", 
+            "glauconite", "meta-sed", "metased", "paragneiss", "para")
+
+        # Volcanic
+        komatiite = ("komatiite", "meimechite", "ultramafitite")
+        basalt = ("basalt", "pillow", "scoria", "picrite", "anamesite", "hawaiite", 
+            "mafite", "mugearite", "oceanite", "palagonite", "tachylyte", "tholeiite", 
+            "mafic", "melaphyre", "greenstone", "spilite", "greenschist", "blueschist", 
+            "basite", "metabasite",)
+        andesite = ("andesit", "boninite", "icelandite", "marianite", "adakite", 
+            "propylite",)
+        dacite = ("dacit", "santorinite", "ignimbrite",)
+        rhyolite = ("rhyolit", "felsite", "liparite", "felsic", "silicic", "pumice", 
+            "obsidian", "dellenite", "rhyodacite", "ignimbrite", "lenticulite", 
+            "halleflinta", "leptite",)
+        alk_volc = ( "polzenite", "hauynite", "arsoite", "benmoreite", "camptonite", 
+            "ciminite", "damkjernite", "damtjernite", "domite", "fortunite", "gauteite",
+            "kenyte", "keratophyre", "kersantite", "kivite", "lampro", "madupite",
+            "minette", "monchiquite", "mondhaldeite", "orendite", "phonolite", "sannaite", 
+            "trachyte", "wyomingite", "fonolito", "tinguaite",  "ordanchite", "melilit", 
+            "katungite", "vsbergite", "analcimite", "ankaratrite", "etindite", "foidite", 
+            "grazinite", "hauynophyre", "kalsilit", "leucitite", "mafurite", "melafoidite",
+            "nephelinite","ugandite", "ottajanite", "melnoite", "pantellerite", "comendite", 
+            "latite", "tristanite", "augitite", "absarokite", "shoshonite", "linosaite",
+            "bergalite", "alnoite", "kimberlite",  "orangeite", "diatreme", "pipe", )
+        volcaniclast = ("tonstein", "peperite", "volcaniclastic", "lahar",)
+        volc = ("volcanic", "extrusive", "lava", "eutaxite", "vitrophyre", "volcan", 
+            "ash", "ashfall", "tuff",  "tephra", "cinder", "porphyrite", 
+            "vulsinite", "glass", "vitrophere",)
+            
+        # Plutonic
+        peridotite = ("olivinite", "dunit", "lherzolite", "peridot", "harzburg", 
+            "wehrlite", "serpentin", "soapstone", "talc", "alkremite", )
+        pyroxenite = ("bronzitite", "pyroxenite", "enstatitite", "websterite",
+            "hornblendite", "cortlandite",)
+        gabbro = ("gabbro", "mafraite", "allivalite", "anorthosite", "diabase", "dolerit", 
+            "leucophyre", "glenmuirite", "jotunite", "labradorite", "luscladite", 
+            "theralite", "norite", "troctolite", "sebastianite", "eclogite", "amphibolit", 
+            "rodingite", "corganite", "corgaspinite",)
+        diorite = ("diorit", "jotunite", "marscoite", "sanukite",)
+        trondhjemite =  ("trondhjemite", "trond",)
+        tonalite = ("tonalit", "adamellite", "enderbite", "enderbite",)
+        granodiorite = ("granodiorite",)
+        granite = ("granit", "microgranite", "adamellite", "aplite", "charnockite", 
+            "granophyre", "rapakivi", "monzonit", "mangerite", "greisen", "pegmat",)
+        alk_plut = ("syenit", "alaskite", "borolanite", "bostonite", "durbachite", 
+            "foyaite", "jacupirangite", "juvite", "kentallenite", "larvikite", "lujavrite",
+            "nordmarkite", "orthoclasite", "shonkinite", "sommaite", "kaersutitite",
+            "lestiwarite", "puglianite", "vaugnerite","fergusite", "ijolite", 
+            "melteigite", "missourite", "tannbuschite", "buchonite", "campanite", 
+            "murambite", "tephrite", "tahitite", "vicoite", "urtite", "ankaramite", 
+            "basanit", "limburgite", "biotitite", "riedenite", "glimmerite", "kamafugite",
+            "turjaite", "essexite", "yamaskite", "teschenite", "crinanite", "vibetoite",  
+            "uncompahgrite", "apatitite", "nelsonite", "phoscorite", "kullaite", )
+        plut = ("plutonic", "pluton", "intrusive", "intrus", "sill", "dike", "stock", 
+            "laccolith", "lopolith", "batholith", "porphyry", "megacryst",
+            "hypabyssal", "chromitite", "topazite", )
+            
+        # Undefined igneous
+        carbonatite = ("alvikite", "carbonatite", "beforsite", "rauhaugite", "sovite",
+            "breunneritite",)
+        ign = ("igneous", "metaign", "orthogneiss", "ortho", "meta-ign", "zeolite",)
+
+        # Undefined metamorphic
+        met = ("crystalline", "migma", "alter", "hydrothermal", "basement", 
+            "high grade metamorphic", "meta", "granulit", "granofels", "gneiss", "schist", 
+            "hornfels", "garnet", "buchite", "epidot", "fenite", "albitite", "chloritite", 
+            "phlogopitite", "sericitite", "tactite", "tourmalinite", "unakite", 
+            "vogesite", "gossan", "palagonite", "sanidinite",)
+
+        # Cover
+        cover = ("lluv", "fluv", "boulder", "gravel", "aleurite", "glaci", "till", "loess", 
+            "regolith", "debris", "fill", "slide", "unconsolidated", "talus", "stream", 
+            "beach", "terrace", "placer", "paleosol", "mass-wasting", "pebble", "cover", 
+            "quaternary", "soil", "laterite", "surficial deposits", "scree", "peat", 
+            "swamp", "marsh", "water", "ice")
+
+        if inclusive || major
+            # Major types include all minor subtypes
+            sed = (siliciclast..., shale..., carb..., evap..., chert..., 
+                phosphorite..., coal..., sed...,)
+            ign = (komatiite..., basalt..., andesite..., dacite..., rhyolite..., 
+                alk_volc..., volcaniclast..., volc..., peridotite..., pyroxenite..., 
+                gabbro..., diorite..., trondhjemite..., tonalite..., granodiorite..., 
+                granite..., alk_plut..., plut..., )
+
+            # If only returning major types, do that 
+            if major
+                return (sed=sed, ign=ign, met=met, cover=cover)
+            end
+        end
+
+        # If returning minor types, do that. The major types have been set to be inclusive
+        # in the if statement above, if we wanted that
+        return (
+            # Sedimentary
+            siliciclast=siliciclast, shale=shale, carb=carb, evap=evap, chert=chert, 
+            phosphorite=phosphorite, coal=coal, sed=sed,
+
+            # Volcanic
+            komatiite=komatiite, basalt=basalt, andesite=andesite, dacite=dacite, 
+            rhyolite=rhyolite, alk_volc=alk_volc, volcaniclast=volcaniclast, volc=volc, 
+            
+            # Plutonic
+            peridotite=peridotite, pyroxenite=pyroxenite, gabbro=gabbro, diorite=diorite, 
+            trondhjemite=trondhjemite, tonalite=tonalite, granodiorite=granodiorite, 
+            granite=granite, alk_plut=alk_plut, plut=plut, 
+
+            # Metamorphic
+            met=met,
+
+            # Cover
+            cover=cover,
+        )
+    end
+
+    """
+    ```julia
+    get_cats(major::Bool, npoints::Int64)
+    ```
+
+    Meow! 🐈 Initialize a NamedTuple of `npoints`-element BitVectors for each defined rock 
+    type.
+
+    If `major` is `true`, only major types are defined. If `major` is `false`, all subtypes
+    are defined.
+
+    See also: `get_minor_types` and `get_rock_class`.
+
+    # Example
+    ```julia
+    typelist, cats = get_cats(true, 10)
+    ```
+    """
+    function get_cats(major::Bool, npoints::Int64)
+        typelist = get_rock_class(major=major)
+
+        return typelist, NamedTuple{keys(typelist)}([falses(npoints) for _ in 1:length(typelist)]) 
+    end
+
+    """
+    ```julia
+    get_minor_types()
+    ```
+
+    Return types nested under the sed, ign, and met "major" types.
+
+    **Important: this function will break if major types are listed before minor types in
+    the `get_cats` function, and if sedimentary types are not listed first!**
+
+    ### Minor Types:
+    * Sed: siliciclast, shale, carb, chert, evaporite, coal, phosphorite, volcaniclast
+    * Ign: volc, plut
+    * Met: metased, metaign
+
+    # Example
+    ```julia
+    minorsed, minorign, minormet = get_minor_types()
+    ```
+    """
+    function get_minor_types()
+        types = get_cats(false, 1)[2]
+        allkeys = collect(keys(types))
+
+        sed = findfirst(==(:sed), allkeys)
+        ign = findfirst(==(:ign), allkeys)
+        met = findfirst(==(:met), allkeys)
+
+        return Tuple(allkeys[1:sed-1]), Tuple(allkeys[sed+1:ign-1]), Tuple(allkeys[ign+1:met-1])
+    end
+
+    """
+    ```julia
+    un_multimatch!(cats, major::Bool)
+    ```
+
+    Exclude rock type matches from each other so each sample is only classified as one
+    rock type.
+
+    If `major` is `true`: 
+    * Cover is excluded from all rock types.
+    * Rocks classified as both metamorphic and sedimentary / igneous (i.e., metasedimentary
+        and metaigneous rocks) are respectively re-classified as sedimentary and igneous rocks.
+    * Rocks classified as sedimentary and igneous are re-classified as igneous rocks.
+
+    If `major` is false:
+    * Cover is excluded from all rock types.
+    * Rocks classified as both metamorphic and sedimentary / igneous (i.e., metasedimentary
+        and metaigneous rocks) are **excluded** from sedimentary and igneous rocks, and 
+        re-classified as metasedimentary and metaigneous rocks.
+    * Rocks classified as more than one subtype of sedimentary rocks are excluded from
+        each other, in arbitrary order.
+    * Rocks classified as both volcanic and plutonic, or both metasedimentary and 
+        metaigneous, are respectively re-classified as undifferentiated igneous and metamorphic
+        rocks.
+    * Rocks classified as sedimentary and igneous are re-classified as igneous rocks.
+    """
+    un_multimatch!(cats, major::Bool) = _un_multimatch!(cats, static(major))
+    function _un_multimatch!(cats, major::True)
+        # Exclude cover
+        cats.sed .&= .! cats.cover
+        cats.ign .&= .! cats.cover
+        cats.met .&= .! cats.cover
+
+        # Classify metased as sed and metaign and ign
+        cats.met .&= .! cats.sed
+        cats.ign .&= .! cats.ign
+
+        # Sed / ign rocks are classified as ign
+        cats.sed .&= .! cats.ign
+
+        return cats
+    end
+
+    function _un_multimatch!(cats, major::False)
+        # Define types
+        minorsed, minorign, minormet = get_minor_types()
+        minortypes = (minorsed..., minorign..., minormet...)
+
+        # Exclude cover from all major and minor rock types
+        cats.sed .&= .! cats.cover
+        cats.ign .&= .! cats.cover
+        cats.met .&= .! cats.cover
+        for i in minortypes
+            cats[i] .&= .! cats.cover
+        end
+
+        # Exclude metamorphic rocks from sed and igns. Class as metased and metaign
+        cats.metased .|= (cats.sed .& cats.met)
+        cats.metaign .|= (cats.ign .& cats.met)
+
+        cats.sed .&= .! cats.met
+        for i in minorsed
+            cats[i] .&= .! cats.met
+        end
+
+        cats.ign .&= .! cats.met
+        for i in minorign
+            cats[i] .&= .! cats.met
+        end
+
+        # Exclude sed subtypes from other sed subtypes
+        for i in 1:(length(minorsed)-1)
+            for j in minorsed[i+1:end]
+                cats[minorsed[i]] .&= .! cats[j]
+            end
+        end
+
+        # Both volcanic and plutonic is undifferentiated igneous
+        cats.volc .&= .!(cats.volc .& cats.plut)
+        cats.plut .&= .!(cats.volc .& cats.plut)
+
+        # Both metaigneous and metasedimentary is undifferentiated metamorphic
+        cats.metased .&= .!(cats.metased .& cats.metaign)
+        cats.metaign .&= .!(cats.metased .& cats.metaign)
+
+        # Sed / ign rocks are classified as ign
+        cats.sed .&= .! cats.ign            
+        for i in minorsed
+            cats[i] .&= .! cats.ign 
+        end
+
+        return cats
+    end
+
+
 ## --- Match Macrostrat responses to usable rock names
     """
     ```julia
