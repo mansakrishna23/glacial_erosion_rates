@@ -556,7 +556,8 @@
     ```julia
     match_rocktype(rocktype, rockname, rockdescrip; 
         [major::Bool], 
-        [unmultimatch::Bool])
+        [unmultimatch::Bool]
+        [inclusive::Bool=true])
     ```
 
     Classify rock samples as sedimentary, igneous, or metamorphic (and associated subtypes)
@@ -574,6 +575,10 @@
 
     ### Optional kwarg `unmultimatch`
     Setting `unmultimatch=false` will not remove multiply-matched samples. Defaults to `true`.
+
+    ### Optional kwarg `inclusive`
+    Defines if major types should include their mapped minor subtypes; e.g. does `sedimentary`
+    include `siliciclastic`? Defaults to `true`.
 
     # Example
     ```julia
@@ -658,4 +663,49 @@
     end
 
 
+## --- Additional metadata for rock types
+    """
+    ```julia
+    get_type(cats::NamedTuple, i; [all_keys=false])
+    ```
+
+    Return the first key of `cats` where `i` is `true`. Optionally specify `allkeys`=`true`
+    to return _all_ keys where `i` is true. Assumes equal length elements of `cats`.
+
+    # Examples
+    ```julia-repl
+    julia> get_type(macro_cats, 254)
+    :sed
+
+    julia> get_type(name_cats, 3, all_keys=true)
+    (:gravel, :sand, :silt, :clay)
+    ```
+    """
+    get_type(cats::NamedTuple, i::Int64; all_keys::Bool=false) = _get_type(cats, i, static(all_keys))
+
+    function _get_type(cats, i, all_keys::False)
+        @assert 0 < i <= length(cats[1]) "Index $i out of bounds."
+
+        @inbounds for k in keys(cats)
+            cats[k][i] && return Symbol(k)
+        end
+
+        return nothing
+    end
+
+    function _get_type(cats, i, all_keys::True)
+        @assert 0 < i <= length(cats[1]) "Index $i out of bounds."
+
+        catkeys = keys(cats)
+        keymatches = falses(length(catkeys))
+
+        @inbounds for k in eachindex(catkeys)
+            cats[k][i] && (keymatches[k]=true)
+        end
+
+        count(keymatches)==0 && return nothing
+        return catkeys[keymatches]
+    end
+
+    
 ## --- End of file
