@@ -13,7 +13,7 @@ N = 1000; % number of independent model runs
 
 % time scales at which to evalusate erosion rates
 time_scales = 10.^(0.5:0.5:6.5);
-
+erosion_base = 2e-4; % baseline erosion during hiatuses
 %% Example model run
 % Representative time series of erosion magnitude and time before present
 time_bp = hiatus_time_series(0, alpha, h_max, t_max);
@@ -25,7 +25,7 @@ hold on
 set(gca,'FontSize',12)
 erosion_time = [time_bp,time_bp,time_bp]';
 sz = size(time_bp);
-erosion_pulse = [zeros(sz),erosion_mag*ones(sz),zeros(sz)]';
+erosion_pulse = [erosion_base*ones(sz),erosion_mag*ones(sz),erosion_base*ones(sz)]';
 plot(erosion_time(:), erosion_pulse(:),'color','k','LineWidth',1)
 
 xlim([0 t_max])
@@ -39,16 +39,22 @@ ylabel('Erosion [mm]')
 
 % erosion rates for given time scales
 unit_erosion_rate = run_model(N, alpha, h_max, t_max, time_scales);
-erosion_rate = unit_erosion_rate * erosion_mag;
+erosion_rate = unit_erosion_rate * (erosion_mag) + erosion_base;
 
-% erosion rates ignoring periods with 0 total erosion
-erosion_rate_pos = erosion_rate;
-erosion_rate_pos(erosion_rate==0) = nan;
-% counts of zero and positive erosion rates for given time scales
-count_zero = sum(erosion_rate == 0,1);
-count_pos = sum(erosion_rate > 0,1);
+% erosion rates ignoring periods with only low erosion
+erosion_rate_high = erosion_rate;
+erosion_rate_high(erosion_rate==erosion_base) = nan;
+% counts of low and high erosion rates for given time scales
+islow = erosion_rate == erosion_base;
+ishigh = erosion_rate > erosion_base;
+
+count_low = sum(islow,1);
+count_high = sum(ishigh,1);
 
 % FIGURE: model results
+color_a = [0.1961    0.5333    0.7412];
+color_b = [0 0 0];
+
 figure(2)
 clf
 
@@ -64,34 +70,36 @@ yticks(10.^(-5:2))
 xlabel('Averaging time scale [y]')
 ylabel('Estimated erosion rate [mm/y]')
 
-% plot upper bound
+% plot hiatus max upper bound
 patch([h_max,h_max,1e7,1e7],[ylim,flip(ylim)],0.9*[1 1 1],'edgecolor','none')
 plot([h_max,h_max],ylim,'--k','linewidth',0.75)
 
 % plot expected behavior
-mean_erosion_rate = 10.^(-0.5*log10(h_max) + log10(erosion_mag));
-plot([1e0,h_max],[erosion_mag, mean_erosion_rate],'r','linewidth',1)
+mean_erosion_rate = 10.^(-0.5*log10(h_max) + log10(erosion_mag + erosion_base));
+plot([1e0,h_max],[erosion_mag + erosion_base, mean_erosion_rate],'color',color_a,'linewidth',1)
 plot([1e0,1e7],[mean_erosion_rate, mean_erosion_rate],'k','linewidth',1)
 
 % plot model data points
 x_data = reshape(repmat(time_scales,N,1),[1,N*length(time_scales)]);
 y_data = erosion_rate(:);
-s = scatter(x_data,y_data,10,'r','filled','MarkerFacealpha',0.1);
+s = scatter(x_data(islow(:)),y_data(islow(:)),10,color_b,'filled','MarkerFacealpha',0.1);
+s = scatter(x_data(ishigh(:)),y_data(ishigh(:)),10,color_a,'filled','MarkerFacealpha',0.1);
 % plot time scale means for all data
-s_1 = plot(time_scales,mean(erosion_rate,1,'omitmissing'),'ok', ...
-    'markersize',7.5,'markerfacecolor','k','DisplayName','All');
-% plot time scale means for positive data
-s_2 = plot(time_scales,mean(erosion_rate_pos,1,'omitmissing'),'or', ...
-    'markersize',7.5,'markerfacecolor','r','DisplayName','Positive');
+s_1 = plot(time_scales,mean(erosion_rate,1,'omitmissing'),'o','markersize',7.5, ...
+    'markerfacecolor',color_b,'markeredgecolor','k','DisplayName','All');
+% plot time scale means for high erosion data
+s_2 = plot(time_scales,mean(erosion_rate_high,1,'omitmissing'),'o', ...
+    'markersize',7.5,'markerfacecolor',color_a,'markeredgecolor','k', ...
+    'DisplayName','High');
 
 % legend
-s_l1 = plot(nan,nan,'o','markerfacecolor',[0.5 0.5 0.5], ...
-    'markeredgecolor','none', 'markersize',7.5,'DisplayName','Mean');
-s_l2 = plot(nan,nan,'o','markerfacecolor',[0.8 0.8 0.8], ...
+s_l1 = plot(nan,nan,'o','markerfacecolor',0.5*[1 1 1], ...
+    'markeredgecolor','k', 'markersize',7.5,'DisplayName','Mean');
+s_l2 = plot(nan,nan,'o','markerfacecolor',0.8*[1 1 1], ...
     'markeredgecolor','none', 'markersize',3,'DisplayName','Data');
 legend([s_1,s_2,s_l1,s_l2],'location','northwest','NumColumns',2)
 
-% SUBPLOT: zero and positive data count
+% SUBPLOT: low and high data count
 subplot(3,3,7:9)
 hold on
 box on
@@ -107,10 +115,10 @@ patch(log10([h_max,h_max,1e7,1e7]),[ylim,flip(ylim)],0.9*[1 1 1], ...
 plot(log10([h_max,h_max]),ylim,'--k','linewidth',0.75)
 
 % plot data
-b = bar(log10(time_scales),[count_pos;count_zero],0.5,'stacked', ...
+b = bar(log10(time_scales),[count_high;count_low],0.5,'stacked', ...
     'FaceColor','flat','EdgeColor','none');
-b(1).CData = [1 0 0];
-b(2).CData = [0 0 0];
+b(1).CData = color_a;
+b(2).CData = color_b;
 
 %% Functions
 
