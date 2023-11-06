@@ -120,4 +120,40 @@
     )
     
 
+## --- Match lithologies to erosion rates based on location lookup
+    iloc = [(data.Latitude[i], data.Longitude[i]) for i in eachindex(data.Latitude)]
+    point_lith = Array{String}(undef, length(iloc))
+
+    for i in eachindex(point_lith)
+        # Find the index of parsed / loc that corresponds to the sample
+        k = 0
+        for j in eachindex(loc)
+            if iloc[i] == loc[j]
+                k = j
+                break
+            end
+        end
+        
+        if k == 0
+            # If there aren't any matches (e.g. NaN lat / lon) then put in an empty string
+            point_lith[i] = "" 
+        else
+            # Use that index to get the lithology
+            point_lith[i] = rocktypes[k]
+        end
+    end
+
+    # Translate that back into a BitVector. There has to be a better way to do this
+    whole_rock_cats = match_rocktype(point_lith)
+    minorsed, minorign, = get_minor_types()
+    for type in minorsed
+        whole_rock_cats.sed .|= whole_rock_cats[type]
+    end
+    for type in minorign
+        whole_rock_cats.ign .|= whole_rock_cats[type]
+    end
+
+## --- Plot erosion by major rock type (sed, ign, met)
+    
+
 ## --- End of file
