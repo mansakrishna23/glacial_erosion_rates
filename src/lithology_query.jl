@@ -88,9 +88,11 @@
     t = .!isnan.(age_uncert)
     age_uncert[t] .= round.(Int, age_uncert[t])
 
+    hashkey = string.(lats) .* ";" .* string.(lons)
+
     # Write to file
-    header = ["Latitude" "Longitude" "Lithology" "Age" "Age Uncert" "Unparsed Lithology"]
-    writedlm("data/lithology_parsed.tsv", vcat(header, hcat(lats, lons, rocktypes,
+    header = ["Latitude" "Longitude" "Hash" "Lithology" "Age" "Age Uncert" "Unparsed Lithology"]
+    writedlm("data/lithology_parsed.tsv", vcat(header, hcat(lats, lons, hashkey, rocktypes,
         parsed.age, age_uncert, unparsed))
     )
     
