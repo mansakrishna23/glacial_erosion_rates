@@ -9,6 +9,7 @@
     using DelimitedFiles
     using StatGeochem
     using ProgressMeter
+    using Plots
 
     # Local utilites
     using Static
@@ -144,16 +145,29 @@
     end
 
     # Translate that back into a BitVector. There has to be a better way to do this
-    whole_rock_cats = match_rocktype(point_lith)
+    cats = match_rocktype(point_lith)
     minorsed, minorign, = get_minor_types()
     for type in minorsed
-        whole_rock_cats.sed .|= whole_rock_cats[type]
+        cats.sed .|= cats[type]
     end
     for type in minorign
-        whole_rock_cats.ign .|= whole_rock_cats[type]
+        cats.ign .|= cats[type]
     end
 
 ## --- Plot erosion by major rock type (sed, ign, met)
+    t = @. !isnan(data.Time_interval_yr) & !isnan(data.Erosion_rate_mm_yr);
+    t .&= (data.Time_interval_yr .> 0) .& (data.Erosion_rate_mm_yr .> 0);
+    h = plot(framestyle=:box, xlabel="Time Interval [yr]", ylabel="Erosion Rate [mm/yr]")
     
+    plot!(h, data.Time_interval_yr[cats.ign .& t], data.Erosion_rate_mm_yr[cats.ign .& t], 
+        seriestype=:scatter, label="Igneous",
+    )
+    plot!(h, data.Time_interval_yr[cats.sed .& t], data.Erosion_rate_mm_yr[cats.sed .& t], 
+        seriestype=:scatter, label="Sedimentary",  
+    )
+    plot!(h, data.Time_interval_yr[cats.met .& t], data.Erosion_rate_mm_yr[cats.met .& t], 
+        seriestype=:scatter, label="Metamorphic",
+        yaxis=:log10, xaxis=:log10
+    )
 
 ## --- End of file

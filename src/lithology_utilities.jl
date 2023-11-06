@@ -675,10 +675,13 @@
 
         # Parse all of the written types into cats
         for i in eachindex(writtentype)
-            try
-                cats[Symbol(writtentype[i])][i] = true
-            catch
-                continue
+            types = split(writtentype[i], ",")
+            for t in eachindex(types)
+                try
+                    cats[Symbol(types[t])][i] = true
+                catch
+                    continue
+                end
             end
         end
 
