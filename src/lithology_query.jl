@@ -17,10 +17,10 @@
 
 
 ## --- Load data
-    data = importdataset("data/glacial_erosion.tsv", '\t', importas=:Tuple)
+    earth = importdataset("data/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
 
     # Get locations, only query each unique location once
-    loc = [(data.Latitude[i], data.Longitude[i]) for i in eachindex(data.Latitude)]
+    loc = [(earth.Latitude[i], earth.Longitude[i]) for i in eachindex(earth.Latitude)]
     loc = unique(loc)
 
     npoints = length(loc)
@@ -122,7 +122,7 @@
     
 
 ## --- Match lithologies to erosion rates based on location lookup
-    iloc = [(data.Latitude[i], data.Longitude[i]) for i in eachindex(data.Latitude)]
+    iloc = [(earth.Latitude[i], earth.Longitude[i]) for i in eachindex(earth.Latitude)]
     point_lith = Array{String}(undef, length(iloc))
 
     for i in eachindex(point_lith)
@@ -154,20 +154,22 @@
         cats.ign .|= cats[type]
     end
 
+
 ## --- Plot erosion by major rock type (sed, ign, met)
-    t = @. !isnan(data.Time_interval_yr) & !isnan(data.Erosion_rate_mm_yr);
-    t .&= (data.Time_interval_yr .> 0) .& (data.Erosion_rate_mm_yr .> 0);
+    t = @. !isnan(earth.Time_interval_yr) & !isnan(earth.Erosion_rate_mm_yr);
+    t .&= (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .> 0);
     h = plot(framestyle=:box, xlabel="Time Interval [yr]", ylabel="Erosion Rate [mm/yr]")
     
-    plot!(h, data.Time_interval_yr[cats.ign .& t], data.Erosion_rate_mm_yr[cats.ign .& t], 
-        seriestype=:scatter, label="Igneous",
-    )
-    plot!(h, data.Time_interval_yr[cats.sed .& t], data.Erosion_rate_mm_yr[cats.sed .& t], 
-        seriestype=:scatter, label="Sedimentary",  
-    )
-    plot!(h, data.Time_interval_yr[cats.met .& t], data.Erosion_rate_mm_yr[cats.met .& t], 
+    plot!(h, earth.Time_interval_yr[cats.ign .& t], earth.Erosion_rate_mm_yr[cats.ign .& t], 
+        seriestype=:scatter, label="Igneous",)
+    plot!(h, earth.Time_interval_yr[cats.sed .& t], earth.Erosion_rate_mm_yr[cats.sed .& t], 
+        seriestype=:scatter, label="Sedimentary",)
+    plot!(h, earth.Time_interval_yr[cats.met .& t], earth.Erosion_rate_mm_yr[cats.met .& t], 
         seriestype=:scatter, label="Metamorphic",
-        yaxis=:log10, xaxis=:log10
+        yaxis=:log10, xaxis=:log10, legend=:bottomleft
     )
 
+
+## --- 
+    # Means for each lithology, potentially weighted by area (second argument to nanmean)
 ## --- End of file
