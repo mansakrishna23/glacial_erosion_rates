@@ -53,8 +53,9 @@
     # # Parse output
     # parsed = parse_burwell_responses(responses, npoints)
 
-    # # Save data as a .csv
+    # # Save data and references
     # writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
+    # writedlm("data/lithology_reference.tsv", unique(parsed.refstrings))
 
 
 ## --- Parse responses into useable data
@@ -80,7 +81,18 @@
         rocktypes[i] = out
     end
 
-    writedlm("data/lithology_parsed.tsv", vcat(["lat" "lon" "type"], hcat(lats, lons, rocktypes)))
+    # Get additional data about the rocks
+    unparsed = parsed.rocktype .* " | " .* parsed.rockname .* " | " .* parsed.rockdescrip
 
+    age_uncert = @. (parsed.agemax - parsed.agemin) / 2
+    t = .!isnan.(age_uncert)
+    age_uncert[t] .= round.(Int, age_uncert[t])
+
+    # Write to file
+    header = ["Latitude" "Longitude" "Lithology" "Age" "Age Uncert" "Unparsed Lithology"]
+    writedlm("data/lithology_parsed.tsv", vcat(header, hcat(lats, lons, rocktypes,
+        parsed.age, age_uncert, unparsed))
+    )
+    
 
 ## --- End of file
