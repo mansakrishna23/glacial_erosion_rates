@@ -28,34 +28,34 @@
     
 
 ## --- API request (commented out after we get the data)
-    # # Definitions / Preallocate 
-    # zoom = 1
-    # responses = Array{Any}(undef, npoints, 1)
+    # Definitions / Preallocate 
+    zoom = 1
+    responses = Array{Any}(undef, npoints, 1)
 
-    # p = Progress(npoints, desc="Querying Macrostrat...")
-    # for i = 1:npoints
-    #     try
-    #         responses[i] = query_macrostrat(lats[i], lons[i], zoom)
-    #     catch
-    #         try
-    #             # Wait and try again
-    #             sleep(10)
-    #             responses[i] = query_macrostrat(lats[i], lons[i], zoom)
-    #         catch
-    #             # If still nothing, move on
-    #             responses[i] = "No response"
-    #         end
-    #     end
-    #     sleep(0.05)
-    #     next!(p)
-    # end
+    p = Progress(npoints, desc="Querying Macrostrat...")
+    for i = 1:npoints
+        try
+            responses[i] = query_macrostrat(lats[i], lons[i], zoom)
+        catch
+            try
+                # Wait and try again
+                sleep(10)
+                responses[i] = query_macrostrat(lats[i], lons[i], zoom)
+            catch
+                # If still nothing, move on
+                responses[i] = "No response"
+            end
+        end
+        sleep(0.05)
+        next!(p)
+    end
 
-    # # Parse output
-    # parsed = parse_burwell_responses(responses, npoints)
+    # Parse output
+    parsed = parse_burwell_responses(responses, npoints)
 
-    # # Save data and references
-    # writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
-    # writedlm("data/lithology_reference.tsv", unique(parsed.refstrings))
+    # Save data and references
+    writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
+    writedlm("data/lithology_reference.tsv", unique(parsed.refstrings))
 
 
 ## --- Parse responses into useable data
@@ -66,6 +66,9 @@
     rock_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
         major=false)
     rock_cats.cover .= false
+
+    # Remove diorite false positive from granodiorite
+    rock_cats.diorite .&= .!rock_cats.granodiorite
 
     # Convert into a human-readable format
     rocktypes = Array{String}(undef, npoints)
@@ -88,11 +91,31 @@
     t = .!isnan.(age_uncert)
     age_uncert[t] .= round.(Int, age_uncert[t])
 
-    hashkey = string.(lats) .* ";" .* string.(lons)
+    # Create a hash string for lookups.
+    hash = Array{String}(undef, npoints)
+    for i in eachindex(hash)
+        latᵢ = lats[i]
+        lonᵢ = lons[i]
+
+        # Round whole numbers to integers, e.g. 20.0 becomes 20
+        if latᵢ % 1 == 0
+            latᵢ = Int(latᵢ)
+        end
+        if lonᵢ % 1 == 0
+            lonᵢ = Int(lonᵢ)
+        end
+
+        # Save
+        hash[i] = string(latᵢ) * ";" * string(lonᵢ)
+    end
+    
+    
+    string.(lats) .* ";" .* string.(lons)
+    # hash = string.(trunc.(lats, digits=4)) .* ";" .* string.(trunc.(lons, digits=4))
 
     # Write to file
     header = ["Latitude" "Longitude" "Hash" "Lithology" "Age" "Age Uncert" "Unparsed Lithology"]
-    writedlm("data/lithology_parsed.tsv", vcat(header, hcat(lats, lons, hashkey, rocktypes,
+    writedlm("data/lithology_parsed.tsv", vcat(header, hcat(lats, lons, hash, rocktypes,
         parsed.age, age_uncert, unparsed))
     )
     
