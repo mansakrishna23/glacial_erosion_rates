@@ -27,34 +27,35 @@
     lons = [loc[i][2] for i=1:npoints]
     
 
-## --- API request 
-    # Definitions / Preallocate 
-    zoom = 1
-    responses = Array{Any}(undef, npoints, 1)
+## --- API request (commented out after we get the data)
+    # # Definitions / Preallocate 
+    # zoom = 1
+    # responses = Array{Any}(undef, npoints, 1)
 
-    p = Progress(npoints, desc="Querying Macrostrat...")
-    for i = 1:npoints
-        try
-            responses[i] = query_macrostrat(lats[i], lons[i], zoom)
-        catch
-            try
-                # Wait and try again
-                sleep(10)
-                responses[i] = query_macrostrat(lats[i], lons[i], zoom)
-            catch
-                # If still nothing, move on
-                responses[i] = "No response"
-            end
-        end
-        sleep(0.05)
-        next!(p)
-    end
+    # p = Progress(npoints, desc="Querying Macrostrat...")
+    # for i = 1:npoints
+    #     try
+    #         responses[i] = query_macrostrat(lats[i], lons[i], zoom)
+    #     catch
+    #         try
+    #             # Wait and try again
+    #             sleep(10)
+    #             responses[i] = query_macrostrat(lats[i], lons[i], zoom)
+    #         catch
+    #             # If still nothing, move on
+    #             responses[i] = "No response"
+    #         end
+    #     end
+    #     sleep(0.05)
+    #     next!(p)
+    # end
 
-    # Parse output
-    parsed = parse_burwell_responses(responses, npoints)
+    # # Parse output
+    # parsed = parse_burwell_responses(responses, npoints)
 
-    # Save data as a .csv
-    writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
+    # # Save data as a .csv
+    # writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
+
 
 ## --- Parse responses into useable data
     # Load responses if you already have them!
@@ -62,7 +63,7 @@
 
     # Match each to a rock name
     rock_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
-        major=true, unmultimatch=false, inclusive=true)
+        major=false)
 
     # Convert into a human-readable format
     rocktypes = Array{String}(undef, npoints)
@@ -79,5 +80,6 @@
     end
 
     writedlm("data/lithology_parsed.tsv", vcat(["lat" "lon" "type"], hcat(lats, lons, rocktypes)))
+
 
 ## --- End of file

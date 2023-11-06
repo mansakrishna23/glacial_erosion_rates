@@ -592,8 +592,6 @@
     """
     function match_rocktype(rocktype, rockname, rockdescrip;
         major::Bool=false, 
-        unmultimatch::Bool=true,
-        inclusive::Bool=true,
         )
 
         # Get rock type classifications and initialized BitVector
@@ -645,7 +643,7 @@
         end
 
         # If subtypes are true, major types must also be true
-        if !major && inclusive
+        if !major
             minorsed, minorign, minormet = get_minor_types()
             for type in minorsed
                 cats.sed .|= cats[type]
@@ -658,7 +656,6 @@
             end
         end
 
-        unmultimatch && return un_multimatch!(cats, major)
         return cats
     end
 
