@@ -64,6 +64,7 @@
     # Match each to a rock name
     rock_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
         major=false)
+    rock_cats.cover .= false
 
     # Convert into a human-readable format
     rocktypes = Array{String}(undef, npoints)
