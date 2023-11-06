@@ -659,6 +659,32 @@
         return cats
     end
 
+    """
+    ```julia
+    match_rocktype(writtentype::AbstractArray{String})
+    ```
+
+    Return a `NamedTuple` of `BitVector`s catagorizing Macrostrat samples as sedimentary, 
+    igneous, metamorphic, and associated subtypes, or cover from types stored as strings 
+    in `writtentype`.
+
+    Major types do not include minor subtypes.
+    """
+    function match_rocktype(writtentype::AbstractArray{String})
+        cats = get_cats(false, length(writtentype))[2]
+
+        # Parse all of the written types into cats
+        for i in eachindex(writtentype)
+            try
+                cats[Symbol(writtentype[i])][i] = true
+            catch
+                continue
+            end
+        end
+
+        return cats
+    end
+
 
 ## --- Additional metadata for rock types
     """
