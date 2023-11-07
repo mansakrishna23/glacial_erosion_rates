@@ -3,6 +3,9 @@ cd(@__DIR__)
 earth = importdataset("glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
 mars = importdataset("glacial_erosion_Mars.tsv", '\t', importas=:Tuple);
 
+## Plot by Glacier types (continental, alpine, etc.)
+## Plot by latitude
+
 
 ## --- All data by method, log erosion rate vs log time
 
@@ -73,11 +76,70 @@ plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
 savefig(h, "erosion_rate_vs_timescale_noncosmogenic.pdf")
 display(h)
 
+## --- Everything but Dry Valleys, log erosion rate vs log time
+
+h = plot(framestyle=:box,
+    xlabel="Timescale [yr]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    xlims = (10^-2, 10^9),
+    xticks = 10.0.^(-2:9),
+    ylims = (10^-3, 10^3),
+    yticks = 10.0.^(-3:3),
+)
+
+t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+t .&=  earth.Locality .!= "Dry Valleys, East Antarctica"
+plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
+    seriestype = :scatter,
+    color = mineralcolors["azurite"],
+    alpha = 0.85,
+    mswidth = 0.25,
+    label="",
+)
+
+savefig(h, "erosion_rate_vs_timescale_nondryvalleys.pdf")
+display(h)
+
+## Calculate some means
+
+t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Area_km2 .>0)
+t .&=  earth.Locality .!= "Dry Valleys, East Antarctica"
+
+μ = nanmean(earth.Erosion_rate_mm_yr[t], earth.Area_km2[t])
+
+logμ = nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
+logσ = nanstd(log10.(earth.Erosion_rate_mm_yr[t]))
+
 
 ## -- Area vs erosion rate
 
+
 h = plot(framestyle=:box,
-    xlabel="Area [km2]",
+    xlabel="Area [km²]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+)
+
+t = (earth.Area_km2 .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+
+plot!(h, earth.Area_km2[t], earth.Erosion_rate_mm_yr[t],
+    seriestype=:scatter,
+    label="",
+    color=mineralcolors["corundum"],
+    alpha=0.85,
+    mswidth=0.25,
+)
+
+savefig(h, "erosion_rate_vs_area_all.pdf")
+
+
+h = plot(framestyle=:box,
+    xlabel="Area [km²]",
     ylabel="Erosion rate [mm/yr]",
     xscale=:log10,
     yscale=:log10,
@@ -98,6 +160,88 @@ plot!(h, earth.Area_km2[t], earth.Erosion_rate_mm_yr[t],
 
 savefig(h, "erosion_rate_vs_area.pdf")
 display(h)
+
+## --- Erosion rate vs duration, binned by area
+
+areas = (0, 0.1, 10, 1000, 10^7)
+h = plot(layout = (2,2),
+    framestyle=:box,
+    xlabel="Timescale [yr]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    size=(800,800),
+    xlims = (10^-2, 10^8),
+    xticks = 10.0.^(-2:1:8),
+    ylims = (10^-5, 10^5),
+    yticks = 10.0.^(-5:1:5),
+)
+
+for i in 1:length(areas)-1
+    t = areas[i] .< earth.Area_km2 .< areas[i+1]
+    plot!(h[i], earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
+        seriestype=:scatter,
+        title = "$(areas[i]) - $(areas[i+1]) km²",
+        label="",
+    )
+end
+savefig(h, "Sadlerianness_vs_area.pdf")
+display(h)
+
+## --- Slope vs area
+
+# N.B. linreg(x, y) = hcat(fill!(similar(x), 1), x) \ y
+rsquared(x,y,line_y) = 1 - nansum((y .- line_y).^2)  / nansum((y .- nanmean(y)).^2) # Function for rsquared value
+
+# areas = 10.0.^(-8:2:7)
+areas = [0, 0.1, 10, 1000, 10^7]
+labels = ["0-0.1", "0.1-10", "10-1000", ">1000"]
+
+Ns = fill(0, length(areas)-1)
+slopes = fill(NaN, length(areas)-1)
+rsquareds = fill(NaN, length(areas)-1)
+
+
+for i in eachindex(slopes)
+    t = areas[i] .<= earth.Area_km2 .< areas[i+1]
+    if any(t)
+        Ns[i] = count(t)
+
+        x = log10.(earth.Time_interval_yr[t])
+        y = log10.(earth.Erosion_rate_mm_yr[t])
+
+        a, b = linreg(x, y)
+        slopes[i] = b
+        ŷ = a .+ b.*x
+
+        rsquareds[i] = rsquared(x,y,ŷ)
+    end
+end
+
+h = plot(framestyle=:box,
+    xlabel="Area [km²]",
+    ylabel="Sadler Slope",
+    xticks=(1:length(areas)-1,labels),
+    ylims=(-1, 0.1)
+)
+plot!(h, 1:length(areas)-1, slopes,
+    label="",
+    markersize=5,
+    seriestype=:scatter,
+    color=:black,
+)
+plot!(h, 1:length(areas)-1, slopes,
+    markersize=sqrt.(rsquareds.*Ns.&),
+    label="",
+    seriestype=:scatter,
+    color=mineralcolors["crocoite"],
+)
+hline!(h, [0], color=:black, label="")
+
+savefig(h, "Sadler_slope_vs_area.pdf")
+display(h)
+
 
 ## --- Continental icesheet erosion
 
