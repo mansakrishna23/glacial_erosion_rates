@@ -128,9 +128,9 @@ h = plot(framestyle=:box,
     yticks = 10.0.^(-5:3),
 )
 
-type = ("Alpine", "High-latitude", "Continental", "Dry Valleys")
+type = ("Alpine", "High-latitude", "Continental", "Outlet ice stream", "Dry Valleys",)
 
-colors = [mineralcolors[m] for m in ("azurite", "zircon", "kyanite", "fluid",)]
+colors = [mineralcolors[m] for m in ("azurite", "zircon", "kyanite", "quartz", "fluid", )]
 for i in eachindex(type)
     t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .== type[i])
     plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
@@ -279,7 +279,7 @@ display(h)
 
 minarea = 0
 
-tc = (earth.Type .== "Continental") .| (earth.Type .== "High-latitude")
+tc = (earth.Type .== "Continental") .| (earth.Type .== "High-latitude") # .| (earth.Type .== "Dry Valleys")  .| (earth.Type .== "Outlet Ice Stream")
 h = plot(framestyle=:box,
     xlabel="Timescale [yr]",
     ylabel="Erosion rate [mm/yr]",
@@ -287,8 +287,10 @@ h = plot(framestyle=:box,
     yscale=:log10,
     fontfamily=:Helvetica,
     xlims=(10^-1, 10^9),
-    ylims=(10^-2.2, 10^0.6),
     xticks=10.0.^(-1:9),
+    ylims=(10^-2.1, 10^0.6),
+    yticks=10.0.^(-2:0.5:0.5),
+    fg_color_legend=:white,
 )
 
 # plot!(h, earth.Time_interval_yr, earth.Erosion_rate_mm_yr, color=:black, alpha=0.3, seriestype=:scatter, label="")
@@ -310,7 +312,7 @@ for i in eachindex(regions)
     )
     ymax = maximum(ylims(h))
     tu = t .& (earth.Erosion_rate_mm_yr .> ymax)
-    plot!(h, earth.Time_interval_yr[tu], fill(ymax/1.1, count(tu)),
+    plot!(h, earth.Time_interval_yr[tu], fill(ymax/1.08, count(tu)),
         seriestype=:scatter,
         markershape=:utriangle,
         color=colors[i],
@@ -320,7 +322,7 @@ for i in eachindex(regions)
     )
     ymin = minimum(ylims(h))
     td = t .& (earth.Erosion_rate_mm_yr .< ymin)
-    plot!(h, earth.Time_interval_yr[td], fill(ymin*1.1, count(td)),
+    plot!(h, earth.Time_interval_yr[td], fill(ymin*1.08, count(td)),
         seriestype=:scatter,
         markershape=:dtriangle,
         color=colors[i],
@@ -360,20 +362,20 @@ plot!(h, mars.Time_interval_yr, mars.Erosion_rate_mm_yr,
 )
 ymax = maximum(ylims(h))
 tu = (mars.Erosion_rate_mm_yr .> ymax)
-plot!(h, mars.Time_interval_yr[tu], fill(ymax/1.1, count(tu)),
+plot!(h, mars.Time_interval_yr[tu], fill(ymax/1.08, count(tu)),
     seriestype=:scatter,
     markershape=:utriangle,
-    color=colors[i],
+    color=marscolor,
     label="",
     alpha=0.85,
     mswidth=0.25,
 )
 ymin = minimum(ylims(h))
 td = (mars.Erosion_rate_mm_yr .< ymin)
-plot!(h, mars.Time_interval_yr[td], fill(ymin*1.1, count(td)),
+plot!(h, mars.Time_interval_yr[td], fill(ymin*1.08, count(td)),
     seriestype=:scatter,
     markershape=:dtriangle,
-    color=colors[i],
+    color=marscolor,
     label="",
     alpha=0.85,
     mswidth=0.25,
@@ -391,9 +393,6 @@ annotate!(0.9e9, mean_erosion/1.3, text("Mars,\nunweighted ave.", marscolor, :ri
 
 
 savefig(h, "Continental_glaciation_rates_withmars.pdf")
-
-# ylims!(10^-4, 10^1)
-# savefig("Continental_glaciation_rates_withmars_all.pdf")
 
 display(h)
 
