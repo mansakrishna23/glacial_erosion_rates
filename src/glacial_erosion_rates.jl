@@ -4,6 +4,29 @@ datadir = "$(@__DIR__)/../data"
 earth = importdataset("$datadir/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
 mars = importdataset("$datadir/glacial_erosion_Mars.tsv", '\t', importas=:Tuple);
 
+## --- Utility functions for plotting
+
+# Scatter, but plot any points outside of ylims as up/down-ward pointing triangles
+function scatternicely!(h, x, y; offset=1.08, label, kwargs...)
+    plot!(h, x, y;
+        seriestype=:scatter, label,
+        kwargs...,
+    )
+    ymax = maximum(ylims(h))
+    tu = y .> ymax
+    plot!(h, x[tu], fill(ymax/offset, count(tu));
+        seriestype=:scatter, markershape=:utriangle, label="",
+        kwargs...,
+    )
+    ymin = minimum(ylims(h))
+    td = y .< ymin
+    plot!(h, x[td], fill(ymin*offset, count(td));
+        seriestype=:scatter, markershape=:dtriangle, label="",
+        kwargs...,
+    )
+    return h
+end
+
 
 ## --- All data by method, log erosion rate vs log time
 
@@ -49,57 +72,57 @@ savefig(h, "erosion_rate_vs_timescale.pdf")
 display(h)
 
 ## --- Everything but cosmogenic surface, log erosion rate vs log time
-
-h = plot(framestyle=:box,
-    xlabel="Timescale [yr]",
-    ylabel="Erosion rate [mm/yr]",
-    xscale=:log10,
-    yscale=:log10,
-    fontfamily=:Helvetica,
-    xlims = (10^-2, 10^9),
-    xticks = 10.0.^(-2:9),
-    ylims = (10^-3, 10^3),
-    yticks = 10.0.^(-3:3),
-)
-
-t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Methodology .!= "Cosmogenic surface")
-plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
-    seriestype = :scatter,
-    color = mineralcolors["azurite"],
-    alpha = 0.85,
-    mswidth = 0.25,
-    label="",
-)
-
-savefig(h, "erosion_rate_vs_timescale_noncosmogenic.pdf")
-display(h)
+#
+# h = plot(framestyle=:box,
+#     xlabel="Timescale [yr]",
+#     ylabel="Erosion rate [mm/yr]",
+#     xscale=:log10,
+#     yscale=:log10,
+#     fontfamily=:Helvetica,
+#     xlims = (10^-2, 10^9),
+#     xticks = 10.0.^(-2:9),
+#     ylims = (10^-3, 10^3),
+#     yticks = 10.0.^(-3:3),
+# )
+#
+# t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Methodology .!= "Cosmogenic surface")
+# plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
+#     seriestype = :scatter,
+#     color = mineralcolors["azurite"],
+#     alpha = 0.85,
+#     mswidth = 0.25,
+#     label="",
+# )
+#
+# savefig(h, "erosion_rate_vs_timescale_noncosmogenic.pdf")
+# display(h)
 
 ## --- Everything but Dry Valleys, log erosion rate vs log time
-
-h = plot(framestyle=:box,
-    xlabel="Timescale [yr]",
-    ylabel="Erosion rate [mm/yr]",
-    xscale=:log10,
-    yscale=:log10,
-    fontfamily=:Helvetica,
-    xlims = (10^-2, 10^9),
-    xticks = 10.0.^(-2:9),
-    ylims = (10^-3, 10^3),
-    yticks = 10.0.^(-3:3),
-)
-
-t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
-t .&=  earth.Locality .!= "Dry Valleys, East Antarctica"
-plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
-    seriestype = :scatter,
-    color = mineralcolors["azurite"],
-    alpha = 0.85,
-    mswidth = 0.25,
-    label="",
-)
-
-savefig(h, "erosion_rate_vs_timescale_nondryvalleys.pdf")
-display(h)
+#
+# h = plot(framestyle=:box,
+#     xlabel="Timescale [yr]",
+#     ylabel="Erosion rate [mm/yr]",
+#     xscale=:log10,
+#     yscale=:log10,
+#     fontfamily=:Helvetica,
+#     xlims = (10^-2, 10^9),
+#     xticks = 10.0.^(-2:9),
+#     ylims = (10^-3, 10^3),
+#     yticks = 10.0.^(-3:3),
+# )
+#
+# t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+# t .&=  earth.Locality .!= "Dry Valleys, East Antarctica"
+# plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
+#     seriestype = :scatter,
+#     color = mineralcolors["azurite"],
+#     alpha = 0.85,
+#     mswidth = 0.25,
+#     label="",
+# )
+#
+# savefig(h, "erosion_rate_vs_timescale_nondryvalleys.pdf")
+# display(h)
 
 ## Calculate some means
 
@@ -303,30 +326,9 @@ for i in eachindex(regions)
     if minarea>0
         t .&= earth.Area_km2 .> minarea
     end
-    plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
-        seriestype=:scatter,
+    scatternicely!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t];
         color=colors[i],
         label=region,
-        alpha=0.85,
-        mswidth=0.25,
-    )
-    ymax = maximum(ylims(h))
-    tu = t .& (earth.Erosion_rate_mm_yr .> ymax)
-    plot!(h, earth.Time_interval_yr[tu], fill(ymax/1.08, count(tu)),
-        seriestype=:scatter,
-        markershape=:utriangle,
-        color=colors[i],
-        label="",
-        alpha=0.85,
-        mswidth=0.25,
-    )
-    ymin = minimum(ylims(h))
-    td = t .& (earth.Erosion_rate_mm_yr .< ymin)
-    plot!(h, earth.Time_interval_yr[td], fill(ymin*1.08, count(td)),
-        seriestype=:scatter,
-        markershape=:dtriangle,
-        color=colors[i],
-        label="",
         alpha=0.85,
         mswidth=0.25,
     )
@@ -343,7 +345,7 @@ for i in eachindex(regions)
     # plot!(h, [5e8], [mean_erosion], yerr=[erosion_sigma], seriestype=:scatter, msc=colors[i], color=colors[i], label="")
 end
 
-# Add 3-5 km cryogenian erosion
+# Optional: Add 3-5 km cryogenian erosion, for comparison
 cryocolor=mineralcolors["magnetite"]
 plot!(h, [64e6], [4000*1000/64e6], yerr=[1000*1000/64e6], msc=cryocolor, color=cryocolor, seriestype=:scatter, label="")
 annotate!(h, 2.5e8, 4000*1000/64e6, text("3-5 km\nCryogen.\nerosion", cryocolor, :center, :8))
@@ -352,33 +354,12 @@ savefig(h, "Continental_glaciation_rates.pdf")
 
 # Add Mars!
 marscolor = mineralcolors["proustite"]
-plot!(h, mars.Time_interval_yr, mars.Erosion_rate_mm_yr,
-    seriestype=:scatter,
+scatternicely!(h, mars.Time_interval_yr, mars.Erosion_rate_mm_yr;
     color=marscolor,
     label="Mars",
     alpha=0.85,
     mswidth=0.25,
     legend=:bottomleft,
-)
-ymax = maximum(ylims(h))
-tu = (mars.Erosion_rate_mm_yr .> ymax)
-plot!(h, mars.Time_interval_yr[tu], fill(ymax/1.08, count(tu)),
-    seriestype=:scatter,
-    markershape=:utriangle,
-    color=marscolor,
-    label="",
-    alpha=0.85,
-    mswidth=0.25,
-)
-ymin = minimum(ylims(h))
-td = (mars.Erosion_rate_mm_yr .< ymin)
-plot!(h, mars.Time_interval_yr[td], fill(ymin*1.08, count(td)),
-    seriestype=:scatter,
-    markershape=:dtriangle,
-    color=marscolor,
-    label="",
-    alpha=0.85,
-    mswidth=0.25,
 )
 
 # Draw lines for unweighted means of each ice sheet
@@ -390,7 +371,6 @@ hline!(h, [mean_erosion],
     label="",
 )
 annotate!(0.9e9, mean_erosion/1.3, text("Mars,\nunweighted ave.", marscolor, :right, 8, fontfamily=:Helvetica))
-
 
 savefig(h, "Continental_glaciation_rates_withmars.pdf")
 
