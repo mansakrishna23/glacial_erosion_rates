@@ -230,7 +230,7 @@
     Note that volcanic and plutonic rocks will include all nested volcanic / plutonic 
     subtypes.
     """
-    function get_rock_class(; major::Bool=false, inclusive::Bool=false)
+    function get_rock_class(; major::Bool=false)
         # Sedimentary
         siliciclast = ("siliciclast", "conglo", "sand", "psamm", "arenit", "arkos", "silt",
             "breccia", "quartzite")
@@ -323,47 +323,46 @@
             "quaternary", "soil", "laterite", "surficial deposits", "scree", "peat", 
             "swamp", "marsh", "water", "ice")
 
-        if inclusive || major
-            # Major types include all minor subtypes
-            sed = (siliciclast..., shale..., carb..., evap..., chert..., 
-                phosphorite..., coal..., sed...,)
-            ign = (komatiite..., basalt..., andesite..., dacite..., rhyolite..., 
-                alk_volc..., volcaniclast..., volc..., peridotite..., pyroxenite..., 
-                gabbro..., diorite..., trondhjemite..., tonalite..., granodiorite..., 
-                granite..., alk_plut..., plut..., carbonatite..., ign...,)
+        # Define major and minor rock types
+        minorsed = (:siliciclast, :shale, :carb, :evap, :chert, :phosphorite, :coal,)
+        minorvolc = (:komatiite, :basalt, :andesite, :dacite, :rhyolite, :alk_volc, 
+            :volcaniclast,)
+        minorplut = (:peridotite, :pyroxenite, :gabbro, :diorite, :trondhjemite, :tonalite, 
+            :tonalite, :granodiorite, :granite, :alk_plut,)
+        minorign = (:volc, :plut, :carbonatite)
 
-            # If only returning major types, do that 
-            if major
-                return (sed=sed, ign=ign, met=met, cover=cover)
-            end
+        if major
+            typelist = (sed=(minorsed, sed...,), ign=(minorign, ign...,), met=met, cover=cover)
+            minors = ()
+        else
+            typelist = (
+                # Sedimentary
+                siliciclast=siliciclast, shale=shale, carb=carb, evap=evap, chert=chert, 
+                phosphorite=phosphorite, coal=coal, sed=sed,
+
+                # Volcanic
+                komatiite=komatiite, basalt=basalt, andesite=andesite, dacite=dacite, 
+                rhyolite=rhyolite, alk_volc=alk_volc, volcaniclast=volcaniclast, volc=volc, 
+                
+                # Plutonic
+                peridotite=peridotite, pyroxenite=pyroxenite, gabbro=gabbro, diorite=diorite, 
+                trondhjemite=trondhjemite, tonalite=tonalite, granodiorite=granodiorite, 
+                granite=granite, alk_plut=alk_plut, plut=plut, 
+
+                # Igneous
+                carbonatite=carbonatite,
+                ign=ign,
+
+                # Metamorphic
+                met=met,
+
+                # Cover
+                cover=cover,
+            )
+            minors = (minorsed, minorvolc, minorplut, minorign)
         end
 
-        # If returning minor types, do that. The major types have been set to be inclusive
-        # in the if statement above, if we wanted that
-        return (
-            # Sedimentary
-            siliciclast=siliciclast, shale=shale, carb=carb, evap=evap, chert=chert, 
-            phosphorite=phosphorite, coal=coal, sed=sed,
-
-            # Volcanic
-            komatiite=komatiite, basalt=basalt, andesite=andesite, dacite=dacite, 
-            rhyolite=rhyolite, alk_volc=alk_volc, volcaniclast=volcaniclast, volc=volc, 
-            
-            # Plutonic
-            peridotite=peridotite, pyroxenite=pyroxenite, gabbro=gabbro, diorite=diorite, 
-            trondhjemite=trondhjemite, tonalite=tonalite, granodiorite=granodiorite, 
-            granite=granite, alk_plut=alk_plut, plut=plut, 
-
-            # Igneous
-            carbonatite=carbonatite,
-            ign=ign,
-
-            # Metamorphic
-            met=met,
-
-            # Cover
-            cover=cover,
-        )
+        return typelist, minors...
     end
 
     """
@@ -385,7 +384,7 @@
     ```
     """
     function get_cats(major::Bool, npoints::Int64)
-        typelist = get_rock_class(major=major)
+        typelist = get_rock_class(major=major)[1]
 
         return typelist, NamedTuple{keys(typelist)}([falses(npoints) for _ in 1:length(typelist)]) 
     end
