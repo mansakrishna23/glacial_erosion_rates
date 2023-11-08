@@ -1,10 +1,8 @@
 using StatGeochem, Plots
-cd(@__DIR__)
-earth = importdataset("glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
-mars = importdataset("glacial_erosion_Mars.tsv", '\t', importas=:Tuple);
 
-## Plot by Glacier types (continental, alpine, etc.)
-## Plot by latitude
+datadir = "$(@__DIR__)/../data"
+earth = importdataset("$datadir/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+mars = importdataset("$datadir/glacial_erosion_Mars.tsv", '\t', importas=:Tuple);
 
 
 ## --- All data by method, log erosion rate vs log time
@@ -24,7 +22,7 @@ h = plot(framestyle=:box,
 )
 
 method = ("Cosmogenic surface", "Cosmogenic", "Thermochronometric", "Volumetric",  "Relief")
-plotmethod = ("Cosmogenic surface", "Cosmogenic detrital", "Thermochronometric", "Volumetric",  "Relief")
+mlabel = ("Cosmogenic surface", "Cosmogenic detrital", "Thermochronometric", "Volumetric",  "Relief")
 
 colors = [mineralcolors[m] for m in ("fluid", "zircon", "kyanite", "azurite", "glaucophane")]
 for i in eachindex(method)
@@ -34,7 +32,7 @@ for i in eachindex(method)
         color = colors[i],
         alpha = 0.85,
         mswidth = 0.25,
-        label = plotmethod[i],
+        label = mlabel[i],
     )
 end
 
@@ -114,6 +112,40 @@ logμ = nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
 logσ = nanstd(log10.(earth.Erosion_rate_mm_yr[t]))
 
 
+## --- All data by glacier type (Continental, Alpine, etc.), log erosion rate vs log time
+
+h = plot(framestyle=:box,
+    xlabel="Timescale [yr]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    fg_color_legend=:white,
+    legend=:bottomleft,
+    xlims = (10^-2, 10^9),
+    xticks = 10.0.^(-2:9),
+    ylims = (10^-5, 10^3),
+    yticks = 10.0.^(-5:3),
+)
+
+type = ("Alpine", "High-latitude", "Continental", "Dry Valleys")
+
+colors = [mineralcolors[m] for m in ("azurite", "zircon", "kyanite", "fluid",)]
+for i in eachindex(type)
+    t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .== type[i])
+    plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
+        seriestype=:scatter,
+        color = colors[i],
+        alpha = 0.85,
+        mswidth = 0.25,
+        label = type[i],
+    )
+end
+
+savefig(h, "glacier_type_erosion_rate_vs_timescale.pdf")
+display(h)
+
+
 ## -- Area vs erosion rate
 
 
@@ -189,7 +221,7 @@ end
 savefig(h, "Sadlerianness_vs_area.pdf")
 display(h)
 
-## --- Slope vs area
+## --- Sadler Slope vs area
 
 # N.B. linreg(x, y) = hcat(fill!(similar(x), 1), x) \ y
 rsquared(x,y,line_y) = 1 - nansum((y .- line_y).^2)  / nansum((y .- nanmean(y)).^2) # Function for rsquared value
@@ -232,7 +264,7 @@ plot!(h, 1:length(areas)-1, slopes,
     color=:black,
 )
 plot!(h, 1:length(areas)-1, slopes,
-    markersize=sqrt.(rsquareds.*Ns.&),
+    markersize=sqrt.(rsquareds.*Ns),
     label="",
     seriestype=:scatter,
     color=mineralcolors["crocoite"],
@@ -255,7 +287,7 @@ h = plot(framestyle=:box,
     yscale=:log10,
     fontfamily=:Helvetica,
     xlims=(10^-1, 10^9),
-    ylims=(10^-2, 10^1),
+    ylims=(10^-2.2, 10^0.6),
     xticks=10.0.^(-1:9),
 )
 
@@ -271,9 +303,28 @@ for i in eachindex(regions)
     end
     plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
         seriestype=:scatter,
-        # msc=colors[i],
         color=colors[i],
         label=region,
+        alpha=0.85,
+        mswidth=0.25,
+    )
+    ymax = maximum(ylims(h))
+    tu = t .& (earth.Erosion_rate_mm_yr .> ymax)
+    plot!(h, earth.Time_interval_yr[tu], fill(ymax/1.1, count(tu)),
+        seriestype=:scatter,
+        markershape=:utriangle,
+        color=colors[i],
+        label="",
+        alpha=0.85,
+        mswidth=0.25,
+    )
+    ymin = minimum(ylims(h))
+    td = t .& (earth.Erosion_rate_mm_yr .< ymin)
+    plot!(h, earth.Time_interval_yr[td], fill(ymin*1.1, count(td)),
+        seriestype=:scatter,
+        markershape=:dtriangle,
+        color=colors[i],
+        label="",
         alpha=0.85,
         mswidth=0.25,
     )
@@ -292,10 +343,10 @@ end
 
 # Add 3-5 km cryogenian erosion
 cryocolor=mineralcolors["magnetite"]
-plot!([64e6], [4000*1000/64e6], yerr=[1000*1000/64e6], msc=cryocolor, color=cryocolor, seriestype=:scatter, label="")
-annotate!(2.5e8, 4000*1000/64e6, text("3-5 km\nCryogen.\nerosion", cryocolor, :center, :8))
+plot!(h, [64e6], [4000*1000/64e6], yerr=[1000*1000/64e6], msc=cryocolor, color=cryocolor, seriestype=:scatter, label="")
+annotate!(h, 2.5e8, 4000*1000/64e6, text("3-5 km\nCryogen.\nerosion", cryocolor, :center, :8))
 
-savefig("Continental_glaciation_rates.pdf")
+savefig(h, "Continental_glaciation_rates.pdf")
 
 # Add Mars!
 marscolor = mineralcolors["proustite"]
@@ -306,9 +357,28 @@ plot!(h, mars.Time_interval_yr, mars.Erosion_rate_mm_yr,
     alpha=0.85,
     mswidth=0.25,
     legend=:bottomleft,
-    xlims=(10^-1, 10^9),
-    ylims=(10^-2.5, 10^0.5),
 )
+ymax = maximum(ylims(h))
+tu = (mars.Erosion_rate_mm_yr .> ymax)
+plot!(h, mars.Time_interval_yr[tu], fill(ymax/1.1, count(tu)),
+    seriestype=:scatter,
+    markershape=:utriangle,
+    color=colors[i],
+    label="",
+    alpha=0.85,
+    mswidth=0.25,
+)
+ymin = minimum(ylims(h))
+td = (mars.Erosion_rate_mm_yr .< ymin)
+plot!(h, mars.Time_interval_yr[td], fill(ymin*1.1, count(td)),
+    seriestype=:scatter,
+    markershape=:dtriangle,
+    color=colors[i],
+    label="",
+    alpha=0.85,
+    mswidth=0.25,
+)
+
 # Draw lines for unweighted means of each ice sheet
 mean_erosion = nanmean(mars.Erosion_rate_mm_yr)
 erosion_sigma = nanstd(earth.Erosion_rate_mm_yr)./sqrt(length(mars.Erosion_rate_mm_yr))
@@ -320,10 +390,10 @@ hline!(h, [mean_erosion],
 annotate!(0.9e9, mean_erosion/1.3, text("Mars,\nunweighted ave.", marscolor, :right, 8, fontfamily=:Helvetica))
 
 
-savefig("Continental_glaciation_rates_withmars.pdf")
+savefig(h, "Continental_glaciation_rates_withmars.pdf")
 
-ylims!(10^-4, 10^1)
-savefig("Continental_glaciation_rates_withmars_all.pdf")
+# ylims!(10^-4, 10^1)
+# savefig("Continental_glaciation_rates_withmars_all.pdf")
 
 display(h)
 
