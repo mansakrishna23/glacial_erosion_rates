@@ -146,9 +146,16 @@
 
     # Translate that back into a BitVector. There has to be a better way to do this
     cats = match_rocktype(point_lith)
-    minorsed, minorign, = get_minor_types()
+    # minorsed, minorign, = get_minor_types()
+    typelist, minorsed, minorvolc, minorplut, minorign = get_rock_class();
     for type in minorsed
         cats.sed .|= cats[type]
+    end
+    for type in minorvolc
+        cats.volc .|= cats[type]
+    end
+    for type in minorplut
+        cats.plut .|= cats[type]
     end
     for type in minorign
         cats.ign .|= cats[type]
@@ -170,6 +177,25 @@
     )
 
 
-## --- 
-    # Means for each lithology, potentially weighted by area (second argument to nanmean)
+## --- Analyze + Plot
+    # Exclude areas without data and Antarctic Dry Valleys
+    t = (earth.Area_km2 .> 0) .& (earth.Erosion_rate_mm_yr .>0);
+    t .&=  earth.Locality .!= "Dry Valleys, East Antarctica";
+    
+    # Average erosion rate by rock type
+    ignμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.ign .& t]))
+    volcμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.volc .& t]))
+    plutμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.plut .& t]))
+    
+    sedμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.sed .& t]))
+    metμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.met .& t]))
+
+    # Weighted by area
+    ignμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.ign .& t]), earth.Area_km2[cats.ign .& t])
+    volcμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.volc .& t]), earth.Area_km2[cats.volc .& t])
+    plutμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.plut .& t]), earth.Area_km2[cats.plut .& t])
+    
+    sedμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.sed .& t]), earth.Area_km2[cats.sed .& t])
+    metμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.met .& t]), earth.Area_km2[cats.met .& t])
+
 ## --- End of file
