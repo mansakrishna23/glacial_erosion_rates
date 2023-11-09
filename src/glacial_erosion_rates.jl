@@ -111,7 +111,7 @@ for i in eachindex(type)
     )
 end
 
-savefig(h, "latitude_vs_erosion_rate.pdf")
+savefig(h, "latitude_vs_erosion_rate-type.pdf")
 display(h)
 
 
@@ -192,6 +192,44 @@ end
 savefig(h, "timescale_vs_erosion_rate-method.pdf")
 display(h)
 
+## --- Histogram of erosion rates!
+
+t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+μ = nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
+binedges = (-4:0.2:4) .+ μ
+bincenters = cntr(binedges)
+hist = plot(framestyle=:box,
+    xlabel="Erosion Rate [mm/yr]",
+    ylabel="N",
+    xflip=true,
+    fg_color_legend=:white,
+    xlims=(10^-5,10^3),
+    xticks=10.0.^(-5:3),
+    xscale=:log10,
+)
+Ns = histcounts(log10.(earth.Erosion_rate_mm_yr[t]), binedges)
+plot!(10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["rhodochrosite"], label="")
+
+t .&= earth.Type .!= "Dry Valleys"
+logerosion = log10.(earth.Erosion_rate_mm_yr[t])
+Ns = histcounts(logerosion, binedges)
+plot!(10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["fluid"], label="")
+
+x = first(binedges):0.01:last(binedges)
+μ, σ = nanmean(logerosion), nanstd(logerosion)
+plot!(10.0.^x, normpdf(μ,σ,x).*(sum(Ns)*step(binedges)),
+    linestyle=:dot,
+    color=:black,
+    label="",
+    )
+
+vline!([10.0.^μ], color=:black, label="")
+annotate!([10.0.^μ], [0], text(" $(round(10^μ, digits=2)) mm/yr", 10, :left, :bottom, rotation=90))
+
+annotate!([10^-4.9], [maximum(ylims())], text("Dry Valleys, East Antarctica ", 10, :right, :bottom, rotation=90, color=mineralcolors["rhodochrosite"]))
+annotate!([10^2.9], [maximum(ylims())], text("All other rates ", 10, :right, :top, rotation=90, color=mineralcolors["fluid"]))
+
+ylims!(0, maximum(ylims()))
 
 ## --- Timescale vs erosion rate, binned by area and colored by measurement type
 
