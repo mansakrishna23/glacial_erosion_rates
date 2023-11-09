@@ -240,30 +240,34 @@ hist = plot(framestyle=:box,
     xlims=(10^-5,10^3),
     xticks=10.0.^(-5:3),
     xscale=:log10,
+    size=(600,300)
 )
 Ns = histcounts(log10.(earth.Erosion_rate_mm_yr[t]), binedges)
-plot!(10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["rhodochrosite"], label="")
+plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["rhodochrosite"], label="")
 
 t .&= earth.Type .!= "Dry Valleys"
 logerosion = log10.(earth.Erosion_rate_mm_yr[t])
 Ns = histcounts(logerosion, binedges)
-plot!(10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["fluid"], label="")
+plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["fluid"], label="")
 
 x = first(binedges):0.01:last(binedges)
 μ, σ = nanmean(logerosion), nanstd(logerosion)
-plot!(10.0.^x, normpdf(μ,σ,x).*(sum(Ns)*step(binedges)),
+plot!(hist, 10.0.^x, normpdf(μ,σ,x).*(sum(Ns)*step(binedges)),
     linestyle=:dot,
     color=:black,
     label="",
     )
 
-vline!([10.0.^μ], color=:black, label="")
-annotate!([10.0.^μ], [0], text(" $(round(10^μ, digits=2)) mm/yr", 10, :left, :bottom, rotation=90))
+vline!(hist, [10.0.^μ], color=:black, label="")
+annotate!(hist, [10.0.^μ], [0], text(" $(round(10^μ, digits=2)) mm/yr", 10, :left, :bottom, rotation=90))
 
-annotate!([10^-4.9], [maximum(ylims())], text("Dry Valleys, East Antarctica ", 10, :right, :bottom, rotation=90, color=mineralcolors["rhodochrosite"]))
-annotate!([10^2.9], [maximum(ylims())], text("All other rates ", 10, :right, :top, rotation=90, color=mineralcolors["fluid"]))
+annotate!(hist, [10^-4.9], [maximum(ylims())], text("Dry Valleys, East Antarctica ", 10, :right, :bottom, rotation=90, color=mineralcolors["rhodochrosite"]))
+annotate!(hist, [10^2.9], [maximum(ylims())], text("All other rates ", 10, :right, :top, rotation=90, color=mineralcolors["fluid"]))
 
-ylims!(0, maximum(ylims()))
+ylims!(hist, 0, maximum(ylims()))
+savefig(hist, "erosion_rate_histogram.pdf")
+display(hist)
+
 
 ## --- Timescale vs erosion rate, binned by area and colored by measurement method
 
