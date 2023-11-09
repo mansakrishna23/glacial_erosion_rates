@@ -101,7 +101,7 @@ h = plot(framestyle=:box,
 
 )
 
-type = ( "Outlet ice stream", "Tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
+type = ( "Outlet ice stream", "Alpine tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
 tlabel = ( "Outlet ice stream", "Alpine tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
 colors = [mineralcolors[m] for m in ("muscovite", "quartz", "azurite", "apatite", "fluid", "rhodochrosite", )]
 for i in eachindex(type)
@@ -166,7 +166,7 @@ h = plot(framestyle=:box,
     yticks = 10.0.^(-5:3),
 )
 
-type = ( "Outlet ice stream", "Tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
+type = ( "Outlet ice stream", "Alpine tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
 tlabel = ( "Outlet ice stream", "Alpine tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
 colors = [mineralcolors[m] for m in ("muscovite", "quartz", "azurite", "apatite", "fluid", "rhodochrosite", )]
 for i in eachindex(type)
