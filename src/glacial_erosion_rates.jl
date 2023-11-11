@@ -401,4 +401,58 @@ savefig(h, "continental_erosion_rates_withmars.pdf")
 
 display(h)
 
+
+## --- Histogram of continental erosion rates
+
+hist = plot(framestyle=:box,
+    xlabel="Erosion Rate [mm/yr]",
+    ylabel="N",
+    xflip=true,
+    fg_color_legend=:white,
+    xlims=(10^-5,10^3),
+    xticks=10.0.^(-5:3),
+    xscale=:log10,
+    size=(600,300)
+)
+
+tc = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+tc .&= (earth.Type .== "Continental") .| (earth.Type .== "High-latitude")
+tc .&= (earth.Region .== "Greenland") .| (earth.Region .== "Fennoscandia") .| (earth.Region .== "Antarctica")
+
+logerosion = log10.(earth.Erosion_rate_mm_yr[tc])
+μ, σ = nanmean(logerosion), nanstd(logerosion)
+binedges = (-4:0.2:4) .+ μ
+bincenters = cntr(binedges)
+
+# Ns = histcounts(log10.(earth.Erosion_rate_mm_yr[t]), binedges)
+# plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["rhodochrosite"], label="")
+
+regions = ("Greenland", "Fennoscandia", "Antarctica", )
+colors = [mineralcolors[m] for m in ("fluid", "kyanite", "azurite", )]
+t = copy(tc)
+for i in eachindex(regions)
+    logerosion = log10.(earth.Erosion_rate_mm_yr[t])
+    Ns = histcounts(logerosion, binedges)
+    plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns),
+        fill=true,
+        color=colors[i],
+        label=regions[i],
+    )
+
+    t .&= earth.Region .!= regions[i]
+end
+
+x = first(binedges):0.01:last(binedges)
+plot!(hist, 10.0.^x, normpdf(μ,σ,x).*(count(tc)*step(binedges)),
+    linestyle=:dot,
+    color=:black,
+    label="",
+)
+vline!(hist, [10.0.^μ], color=:black, label="")
+annotate!(hist, [10.0.^μ], [0], text(" $(round(10^μ, digits=2)) mm/yr", 10, :left, :bottom, rotation=90))
+
+ylims!(hist, 0, maximum(ylims()))
+savefig(hist, "continental_erosion_rate_histogram.pdf")
+display(hist)
+
 ## ---
