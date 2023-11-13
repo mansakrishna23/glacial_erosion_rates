@@ -198,4 +198,94 @@
     sedμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.sed .& t]), earth.Area_km2[cats.sed .& t])
     metμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.met .& t]), earth.Area_km2[cats.met .& t])
 
+## --- Functions
+    stepify(x::AbstractVector) = vec(vcat(x', x'))
+    stepifyedges(x::AbstractVector) = vec(vcat(x[1:end-1]', x[2:end]'))
+
+
+## --- Histograms of erosion rate by lithology
+    # Exclude areas without data and Antarctic Dry Valleys
+    t = (earth.Area_km2 .> 0) .& (earth.Erosion_rate_mm_yr .>0);
+    dv = earth.Locality .== "Dry Valleys, East Antarctica";
+    t .&= .!dv;
+
+    # All erosion rates, including dry valleys
+    μ = nanmean(log10.(earth.Erosion_rate_mm_yr[t .& dv]))
+    binedges = (-4:0.2:4) .+ μ
+    bincenters = cntr(binedges)
+    stepc = step(binedges)
+
+    # Calculate mean and standard deviation for each lithology
+    x = first(binedges):0.01:last(binedges)
+    logerosion = log10.(earth.Erosion_rate_mm_yr[cats.sed .& t])
+    sedμ, sedσ = nanmean(logerosion), nanstd(logerosion)
+
+    logerosion = log10.(earth.Erosion_rate_mm_yr[cats.ign .& t])
+    ignμ, ignσ = nanmean(logerosion), nanstd(logerosion)
+
+    logerosion = log10.(earth.Erosion_rate_mm_yr[cats.met .& t])
+    metμ, metσ = nanmean(logerosion), nanstd(logerosion)
+
+    # And for dry valleys
+    # logerosion = log10.(earth.Erosion_rate_mm_yr[dv])
+    # dvμ, dvσ = nanmean(logerosion), nanstd(logerosion)
+
+    # Plot histograms
+    hist = plot(framestyle=:box,
+        xlabel="Erosion Rate [mm/yr]",
+        ylabel="N",
+        xflip=true,
+        fg_color_legend=:white,
+        xlims=(10^-5,10^3),
+        xticks=10.0.^(-5:3),
+        xscale=:log10,
+        size=(600,300)
+    )
+
+    nsed = histcounts(log10.(earth.Erosion_rate_mm_yr[cats.sed .& t]), binedges);
+    nsed = float(nsed) ./ nansum(float(nsed) .* stepc)
+    plot!(hist, 10.0.^stepifyedges(binedges), stepify(nsed), fill=true, alpha=0.5,
+        color=mineralcolors["quartz"], label=""
+    )
+
+    nign = histcounts(log10.(earth.Erosion_rate_mm_yr[cats.ign .& t]), binedges);
+    nign = float(nign) ./ nansum(float(nign) .* stepc)
+    plot!(hist, 10.0.^stepifyedges(binedges), stepify(nign), fill=true, alpha=0.5,
+        color=mineralcolors["melt"], label=""
+    )
+
+    nmet = histcounts(log10.(earth.Erosion_rate_mm_yr[cats.met .& t]), binedges);
+    nmet = float(nmet) ./ nansum(float(nmet) .* stepc)
+    plot!(hist, 10.0.^stepifyedges(binedges), stepify(nmet), fill=true, alpha=0.5,
+        color=mineralcolors["feldspar"], label=""
+    )
+
+    # Dry valleys?
+    # ndv = histcounts(log10.(earth.Erosion_rate_mm_yr[dv]), binedges);
+    # ndv = float(nign) ./ nansum(float(nign) .* stepc)
+    # plot!(hist, 10.0.^stepifyedges(binedges), stepify(nmet), fill=true, alpha=0.5,
+    #     color=mineralcolors["crocite"], label=""
+    # )
+
+    # Plot PDFs    
+    plot!(hist, 10.0.^x, normpdf(sedμ,sedσ,x).*(sum(nsed)*step(binedges)),
+        linestyle=:solid, linewidth=2,
+        color=mineralcolors["quartz"],
+        label="Sedimentary",
+    )
+    plot!(hist, 10.0.^x, normpdf(ignμ,ignσ,x).*(sum(nign)*step(binedges)),
+        linestyle=:solid, linewidth=2,
+        color=mineralcolors["melt"],
+        label="Igneous",
+    )
+    plot!(hist, 10.0.^x, normpdf(metμ,metσ,x).*(sum(nmet)*step(binedges)),
+        linestyle=:solid, linewidth=2,
+        color=mineralcolors["feldspar"],
+        label="Metamorphic",
+    )
+    display(hist)
+
+
+## --- Repeat erosion rate vs. timescale for area bins by lithology rather than method
+
 ## --- End of file
