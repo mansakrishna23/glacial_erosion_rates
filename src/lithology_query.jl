@@ -206,11 +206,11 @@
 ## --- Histograms of erosion rate by lithology
     # Exclude areas without data and Antarctic Dry Valleys
     t = (earth.Area_km2 .> 0) .& (earth.Erosion_rate_mm_yr .>0);
-    dv = earth.Locality .== "Dry Valleys, East Antarctica";
-    t .&= .!dv;
+    # dv = (earth.Locality .== "Dry Valleys, East Antarctica") .& t;
+    t .&= (earth.Locality .!= "Dry Valleys, East Antarctica");
 
     # All erosion rates, including dry valleys
-    μ = nanmean(log10.(earth.Erosion_rate_mm_yr[t .& dv]))
+    μ = nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
     binedges = (-4:0.2:4) .+ μ
     bincenters = cntr(binedges)
     stepc = step(binedges)
@@ -284,8 +284,66 @@
         label="Metamorphic",
     )
     display(hist)
+    savefig(hist, "erosion_rate_vs_lithology.pdf")
 
 
 ## --- Repeat erosion rate vs. timescale for area bins by lithology rather than method
+    h = plot(layout = (2,2),
+        framestyle=:box,
+        xlabel="Timescale [yr]",
+        ylabel="Erosion rate [mm/yr]",
+        xscale=:log10,
+        yscale=:log10,
+        fontfamily=:Helvetica,
+        size=(800,800),
+        xlims = (10^-2, 10^8),
+        xticks = 10.0.^(-2:1:8),
+        ylims = (10^-5, 10^5),
+        yticks = 10.0.^(-5:1:5),
+    )
+
+    areas = (0, 0.1, 10, 1000, 10^7)
+    titles = ("0-0.1 km²", "0.1-10 km²", "10-1000 km²", ">1000 km²")
+
+    # Add cosmogenic line of constant 600mm thickness
+    plot!(h[1], collect(xlims(h[1])), 600.0./collect(xlims(h[1])), color=:red, label="")
+    x = minimum(xlims(h[1]))*90
+    annotate!(h[1], x, 600/x, text("600 mm", 10, :bottom, color=:red, rotation=-45.0))
+
+    # Add log-mean line for all others
+    t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .!= "Dry Valleys")
+    logμ = 10^nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
+    for j in 1:4
+    hline!(h[j], [logμ], color=mineralcolors["fluid"], label="")
+    end
+    annotate!(h[1], x, logμ, text("$(round(logμ, digits=2)) mm/yr", 10, :top, color=mineralcolors["fluid"],))
+
+
+    lithology = (:sed, :ign, :met)
+    lith_label = ("Sedimentary", "Igneous", "Metamorphic")
+
+    # method = ("Cosmogenic", "Cosmogenic surface", "Thermochronometric", "Volumetric",)
+    # mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
+    colors = [mineralcolors[m] for m in ( "quartz", "melt", "feldspar")]
+
+    for j in 1:length(areas)-1
+    t = (areas[j] .< earth.Area_km2 .< areas[j+1]) .& (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+    plot!(h[j], title=titles[j])
+
+    for i in eachindex(lithology)
+        tt = t .& cats[lithology[i]]
+        plot!(h[j], earth.Time_interval_yr[tt], earth.Erosion_rate_mm_yr[tt],
+            seriestype=:scatter,
+            color = colors[i],
+            alpha = 0.85,
+            mswidth = 0.1,
+            label = lith_label[i],
+        )
+    end
+    end
+
+    savefig(h, "timescale_vs_erosion_rate-area_lithology.pdf")
+    display(h)
+
 
 ## --- End of file
