@@ -133,7 +133,7 @@ h = plot(framestyle=:box,
 
 )
 
-method = ("Cosmogenic", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
+method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
 mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
 colors = [mineralcolors[m] for m in ( "spessartine", "rhodochrosite", "corundum", "sodalite", "glaucophane")]
 for i in eachindex(method)
@@ -200,7 +200,7 @@ h = plot(framestyle=:box,
     yticks = 10.0.^(-5:3),
 )
 
-method = ("Cosmogenic", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
+method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
 mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
 colors = [mineralcolors[m] for m in ( "spessartine", "rhodochrosite", "corundum", "sodalite", "glaucophane")]
 for i in eachindex(method)
@@ -302,7 +302,7 @@ end
 annotate!(h[1], x, logμ, text("$(round(logμ, digits=2)) mm/yr", 10, :top, color=mineralcolors["fluid"],))
 
 
-method = ("Cosmogenic", "Cosmogenic surface", "Thermochronometric", "Volumetric",)
+method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",)
 mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
 colors = [mineralcolors[m] for m in ( "spessartine", "rhodochrosite", "corundum", "sodalite", "glaucophane")]
 
