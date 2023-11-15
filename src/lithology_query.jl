@@ -234,7 +234,7 @@
     hist = plot(framestyle=:box,
         xlabel="Erosion Rate [mm/yr]",
         ylabel="N",
-        xflip=true,
+        xflip=false,
         fg_color_legend=:white,
         xlims=(10^-5,10^3),
         xticks=10.0.^(-5:3),
