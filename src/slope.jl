@@ -4,6 +4,7 @@
     using StatGeochem
     using HDF5
     using DelimitedFiles
+    using Measurements
 
 
 ## --- Find the average value of slope over an area
@@ -97,6 +98,47 @@
     end
 
 
+## --- Deconstruct an array of measurements
+    """
+    ```julia
+        unmeasurementify(A::AbstractArray{Measurement{Float64}})
+        unmeasurementify(A::NamedTuple)
+    ```
+    
+    Separate an Array or NamedTuple `A` of `measurements` into an array of values and an 
+    array of errors.
+    
+    # Example
+    ```julia-repl
+    julia> A = [1 ± 0.1, 2 ± 0.1]
+    2-element Vector{Measurement{Float64}}:
+     1.0 ± 0.1
+     2.0 ± 0.1
+    
+    julia> val, err = unmeasurementify(A)
+    ([1.0, 2.0], [0.1, 0.1])
+    ```
+    """
+    function unmeasurementify(A::AbstractArray{Measurement{Float64}})
+        val = fill(NaN, length(A))
+        err = fill(NaN, length(A))
+        for i in eachindex(A)
+            val[i] = A[i].val
+            err[i] = A[i].err
+        end
+        return val, err
+    end
+    function unmeasurementify(A::NamedTuple)
+        val = fill(NaN, length(A))
+        err = fill(NaN, length(A))
+        for i in eachindex(keys(A))
+            val[i] = A[i].val
+            err[i] = A[i].err
+        end
+        return val, err
+    end
+
+
 ## --- Calculate the maximum slope at each point
     # # We prefer maximum slope to average slope, because average slope will be biased 
     # lower by "sidehilling" along a slope.
@@ -111,7 +153,7 @@
 
     # srtm = h5read("data/srtm15plus.h5", "vars/")
 
-    # # Calculate slope and save to a file
+    # # Calculate slope and save to a file (takes a long time)
     # slope = maxslope(srtm["elevation"], srtm["x_lon_cntr"], srtm["y_lat_cntr"], 
     #     srtm["cellsize"], minmatval=-12000
     # )
@@ -132,8 +174,8 @@
     
 ## --- Calculate the average slope (from our maximum slope dataset) for each sample point
     # Load SRTM15+ dataset
-    srtm15_slope = h5read("output/srtm15plus_maxslope.h5", "vars/slope")
-    srtm15_sf = h5read("output/srtm15plus_maxslope.h5", "vars/scalefactor")
+    srtm15_slope = h5read("data/srtm15plus_maxslope.h5", "vars/slope")
+    srtm15_sf = h5read("data/srtm15plus_maxslope.h5", "vars/scalefactor")
 
     # Load erosion data
     glacial = importdataset("data/glacial_erosion_Earth.tsv", '\t', importas=:Tuple)
@@ -147,6 +189,10 @@
     slope_nonglacial = movingwindow(srtm15_slope, nonglacial.Latitude, nonglacial.Longitude, 
         srtm15_sf, n=18
     )
+
+    # Un-measurement the data 
+    slope_glacial = unmeasurementify(slope_glacial)[1]
+    slope_nonglacial = unmeasurementify(slope_nonglacial)[1]
 
     # Save to file
     writedlm("data/slope_glacial.tsv", slope_glacial, '\t')
