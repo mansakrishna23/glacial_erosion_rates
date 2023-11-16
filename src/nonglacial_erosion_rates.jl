@@ -244,10 +244,10 @@ hist = plot(framestyle=:box,
 Ns = histcounts(log10.(earth.Erosion_rate_mm_yr[t]), binedges)
 plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["rhodochrosite"], label="")
 
-t .&= earth.Type .!= "Dry Valleys"
-logerosion = log10.(earth.Erosion_rate_mm_yr[t])
-Ns = histcounts(logerosion, binedges)
-plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["fluid"], label="")
+# t .&= earth.Type .!= "Dry Valleys"
+# logerosion = log10.(earth.Erosion_rate_mm_yr[t])
+# Ns = histcounts(logerosion, binedges)
+# plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["fluid"], label="")
 
 x = first(binedges):0.01:last(binedges)
 μ, σ = nanmean(logerosion), nanstd(logerosion)
