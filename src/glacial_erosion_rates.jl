@@ -294,31 +294,36 @@ display(h)
 
 ## -- Timescale vs erosion rate, Mars
 
-plot!(h, framestyle=:box,
+h = plot(framestyle=:box,
     xlabel="Timescale [yr]",
     ylabel="Erosion rate [mm/yr]",
     xscale=:log10,
     yscale=:log10,
     fontfamily=:Helvetica,
     fg_color_legend=:white,
-    xlims = (10^-2, 10^10),
-    xticks = 10.0.^(-2:10),
-    ylims = (10^-8, 10^4),
-    yticks = 10.0.^(-8:4),
-    size = (600,600),
+    # xlims = (10^-2, 10^10),
+    # xticks = 10.0.^(-2:10),
+    # ylims = (10^-8, 10^4),
+    # yticks = 10.0.^(-8:4),
+    # size = (600,600),
+    xlims = (10^-2, 10^11),
+    xticks = 10.0.^(-2:11),
+    ylims = (10^-8, 10^2),
+    yticks = 10.0.^(-8:2),
+    # size = (600,600),
 )
 
 t = (ngmars.Time_interval_yr .> 0) .& (ngmars.Erosion_rate_mm_yr .>0)
 scatternicely!(h, ngmars.Time_interval_yr[t], ngmars.Erosion_rate_mm_yr[t],
-    label="Nonglacial",
-    color=parse(Color, "#f5ccdd"),
+    label="Mars, Nonglacial",
+    color=parse(Color, "#f9dfe9"),
     alpha=1,
     mswidth=0,
 )
 
 t = (mars.Time_interval_yr .> 0) .& (mars.Erosion_rate_mm_yr .>0)
 scatternicely!(h, mars.Time_interval_yr[t], mars.Erosion_rate_mm_yr[t],
-    label="Glacial",
+    label="Mars, Glacial",
     color=mineralcolors["rhodochrosite"],
     alpha=0.85,
     mswidth=0.25,
