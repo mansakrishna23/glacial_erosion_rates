@@ -17,10 +17,12 @@
 
 
 ## --- Load data
-    earth = importdataset("data/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+    # data = importdataset("data/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+    data = importdataset("data/nonglacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+
 
     # Get locations, only query each unique location once
-    loc = [(earth.Latitude[i], earth.Longitude[i]) for i in eachindex(earth.Latitude)]
+    loc = [(data.Latitude[i], data.Longitude[i]) for i in eachindex(data.Latitude)]
     loc = unique(loc)
 
     npoints = length(loc)
@@ -55,13 +57,16 @@
     parsed = parse_burwell_responses(responses, npoints)
 
     # Save data and references
-    writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
-    writedlm("data/lithology_reference.tsv", unique(parsed.refstrings))
+    # writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
+    # writedlm("data/lithology_reference.tsv", unique(parsed.refstrings))
+    writedlm("data/lithology_unparsed_nonglacial.tsv", unelementify(parsed))
+    writedlm("data/lithology_reference_nonglacial.tsv", unique(parsed.refstrings))
 
 
 ## --- Parse responses into useable data
     # Load responses if you already have them!
-    parsed = importdataset("data/lithology_unparsed.tsv", '\t', importas=:Tuple)
+    # parsed = importdataset("data/lithology_unparsed.tsv", '\t', importas=:Tuple)
+    parsed = importdataset("data/lithology_unparsed_nonglacial.tsv", '\t', importas=:Tuple)
 
     # Match each to a rock name
     rock_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
@@ -116,13 +121,15 @@
 
     # Write to file
     header = ["Latitude" "Longitude" "Hash" "Lithology" "Age" "Age Uncert" "Unparsed Lithology"]
-    writedlm("data/lithology_parsed.tsv", vcat(header, hcat(lats, lons, hash, rocktypes,
+    # writedlm("data/lithology_parsed.tsv", vcat(header, hcat(lats, lons, hash, rocktypes,
+    #     parsed.age, age_uncert, unparsed))
+    # )
+    writedlm("data/lithology_parsed_nonglacial.tsv", vcat(header, hcat(lats, lons, hash, rocktypes,
         parsed.age, age_uncert, unparsed))
     )
-    
 
 ## --- Match lithologies to erosion rates based on location lookup
-    iloc = [(earth.Latitude[i], earth.Longitude[i]) for i in eachindex(earth.Latitude)]
+    iloc = [(data.Latitude[i], data.Longitude[i]) for i in eachindex(data.Latitude)]
     point_lith = Array{String}(undef, length(iloc))
 
     for i in eachindex(point_lith)
@@ -163,15 +170,15 @@
 
 
 ## --- Plot erosion by major rock type (sed, ign, met)
-    t = @. !isnan(earth.Time_interval_yr) & !isnan(earth.Erosion_rate_mm_yr);
-    t .&= (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .> 0);
+    t = @. !isnan(data.Time_interval_yr) & !isnan(data.Erosion_rate_mm_yr);
+    t .&= (data.Time_interval_yr .> 0) .& (data.Erosion_rate_mm_yr .> 0);
     h = plot(framestyle=:box, xlabel="Time Interval [yr]", ylabel="Erosion Rate [mm/yr]")
     
-    plot!(h, earth.Time_interval_yr[cats.ign .& t], earth.Erosion_rate_mm_yr[cats.ign .& t], 
+    plot!(h, data.Time_interval_yr[cats.ign .& t], data.Erosion_rate_mm_yr[cats.ign .& t], 
         seriestype=:scatter, label="Igneous",)
-    plot!(h, earth.Time_interval_yr[cats.sed .& t], earth.Erosion_rate_mm_yr[cats.sed .& t], 
+    plot!(h, data.Time_interval_yr[cats.sed .& t], data.Erosion_rate_mm_yr[cats.sed .& t], 
         seriestype=:scatter, label="Sedimentary",)
-    plot!(h, earth.Time_interval_yr[cats.met .& t], earth.Erosion_rate_mm_yr[cats.met .& t], 
+    plot!(h, data.Time_interval_yr[cats.met .& t], data.Erosion_rate_mm_yr[cats.met .& t], 
         seriestype=:scatter, label="Metamorphic",
         yaxis=:log10, xaxis=:log10, legend=:bottomleft
     )
@@ -179,24 +186,24 @@
 
 ## --- Analyze + Plot
     # Exclude areas without data and Antarctic Dry Valleys
-    t = (earth.Area_km2 .> 0) .& (earth.Erosion_rate_mm_yr .>0);
-    t .&=  earth.Locality .!= "Dry Valleys, East Antarctica";
+    t = (data.Area_km2 .> 0) .& (data.Erosion_rate_mm_yr .>0);
+    t .&=  data.Locality .!= "Dry Valleys, East Antarctica";
     
     # Average erosion rate by rock type
-    ignμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.ign .& t]))
-    volcμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.volc .& t]))
-    plutμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.plut .& t]))
+    ignμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.ign .& t]))
+    volcμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.volc .& t]))
+    plutμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.plut .& t]))
     
-    sedμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.sed .& t]))
-    metμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.met .& t]))
+    sedμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.sed .& t]))
+    metμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.met .& t]))
 
     # Weighted by area
-    ignμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.ign .& t]), earth.Area_km2[cats.ign .& t])
-    volcμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.volc .& t]), earth.Area_km2[cats.volc .& t])
-    plutμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.plut .& t]), earth.Area_km2[cats.plut .& t])
+    ignμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.ign .& t]), data.Area_km2[cats.ign .& t])
+    volcμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.volc .& t]), data.Area_km2[cats.volc .& t])
+    plutμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.plut .& t]), data.Area_km2[cats.plut .& t])
     
-    sedμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.sed .& t]), earth.Area_km2[cats.sed .& t])
-    metμ = nanmean(log10.(earth.Erosion_rate_mm_yr[cats.met .& t]), earth.Area_km2[cats.met .& t])
+    sedμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.sed .& t]), data.Area_km2[cats.sed .& t])
+    metμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.met .& t]), data.Area_km2[cats.met .& t])
 
 ## --- Functions
     stepify(x::AbstractVector) = vec(vcat(x', x'))
@@ -205,29 +212,29 @@
 
 ## --- Histograms of erosion rate by lithology
     # Exclude areas without data and Antarctic Dry Valleys
-    t = (earth.Area_km2 .> 0) .& (earth.Erosion_rate_mm_yr .>0);
-    # dv = (earth.Locality .== "Dry Valleys, East Antarctica") .& t;
-    t .&= (earth.Locality .!= "Dry Valleys, East Antarctica");
+    t = (data.Area_km2 .> 0) .& (data.Erosion_rate_mm_yr .>0);
+    # dv = (data.Locality .== "Dry Valleys, East Antarctica") .& t;
+    t .&= (data.Locality .!= "Dry Valleys, East Antarctica");
 
     # All erosion rates, including dry valleys
-    μ = nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
+    μ = nanmean(log10.(data.Erosion_rate_mm_yr[t]))
     binedges = (-4:0.2:4) .+ μ
     bincenters = cntr(binedges)
     stepc = step(binedges)
 
     # Calculate mean and standard deviation for each lithology
     x = first(binedges):0.01:last(binedges)
-    logerosion = log10.(earth.Erosion_rate_mm_yr[cats.sed .& t])
+    logerosion = log10.(data.Erosion_rate_mm_yr[cats.sed .& t])
     sedμ, sedσ = nanmean(logerosion), nanstd(logerosion)
 
-    logerosion = log10.(earth.Erosion_rate_mm_yr[cats.ign .& t])
+    logerosion = log10.(data.Erosion_rate_mm_yr[cats.ign .& t])
     ignμ, ignσ = nanmean(logerosion), nanstd(logerosion)
 
-    logerosion = log10.(earth.Erosion_rate_mm_yr[cats.met .& t])
+    logerosion = log10.(data.Erosion_rate_mm_yr[cats.met .& t])
     metμ, metσ = nanmean(logerosion), nanstd(logerosion)
 
     # And for dry valleys
-    # logerosion = log10.(earth.Erosion_rate_mm_yr[dv])
+    # logerosion = log10.(data.Erosion_rate_mm_yr[dv])
     # dvμ, dvσ = nanmean(logerosion), nanstd(logerosion)
 
     # Plot histograms
@@ -242,26 +249,26 @@
         size=(600,300)
     )
 
-    nsed = histcounts(log10.(earth.Erosion_rate_mm_yr[cats.sed .& t]), binedges);
+    nsed = histcounts(log10.(data.Erosion_rate_mm_yr[cats.sed .& t]), binedges);
     nsed = float(nsed) ./ nansum(float(nsed) .* stepc)
     plot!(hist, 10.0.^stepifyedges(binedges), stepify(nsed), fill=true, alpha=0.5,
         color=mineralcolors["quartz"], label=""
     )
 
-    nign = histcounts(log10.(earth.Erosion_rate_mm_yr[cats.ign .& t]), binedges);
+    nign = histcounts(log10.(data.Erosion_rate_mm_yr[cats.ign .& t]), binedges);
     nign = float(nign) ./ nansum(float(nign) .* stepc)
     plot!(hist, 10.0.^stepifyedges(binedges), stepify(nign), fill=true, alpha=0.5,
         color=mineralcolors["melt"], label=""
     )
 
-    nmet = histcounts(log10.(earth.Erosion_rate_mm_yr[cats.met .& t]), binedges);
+    nmet = histcounts(log10.(data.Erosion_rate_mm_yr[cats.met .& t]), binedges);
     nmet = float(nmet) ./ nansum(float(nmet) .* stepc)
     plot!(hist, 10.0.^stepifyedges(binedges), stepify(nmet), fill=true, alpha=0.5,
         color=mineralcolors["feldspar"], label=""
     )
 
     # Dry valleys?
-    # ndv = histcounts(log10.(earth.Erosion_rate_mm_yr[dv]), binedges);
+    # ndv = histcounts(log10.(data.Erosion_rate_mm_yr[dv]), binedges);
     # ndv = float(nign) ./ nansum(float(nign) .* stepc)
     # plot!(hist, 10.0.^stepifyedges(binedges), stepify(nmet), fill=true, alpha=0.5,
     #     color=mineralcolors["crocite"], label=""
@@ -284,7 +291,8 @@
         label="Metamorphic",
     )
     display(hist)
-    savefig(hist, "erosion_rate_vs_lithology.pdf")
+    # savefig(hist, "erosion_rate_vs_lithology.pdf")
+    savefig(hist, "erosion_rate_vs_lithology_nonglacial.pdf")
 
 
 ## --- Repeat erosion rate vs. timescale for area bins by lithology rather than method
@@ -311,8 +319,8 @@
     annotate!(h[1], x, 600/x, text("600 mm", 10, :bottom, color=:red, rotation=-45.0))
 
     # Add log-mean line for all others
-    t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .!= "Dry Valleys")
-    logμ = 10^nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
+    t = (data.Time_interval_yr .> 0) .& (data.Erosion_rate_mm_yr .>0) .& (data.Type .!= "Dry Valleys")
+    logμ = 10^nanmean(log10.(data.Erosion_rate_mm_yr[t]))
     for j in 1:4
     hline!(h[j], [logμ], color=mineralcolors["fluid"], label="")
     end
@@ -327,12 +335,12 @@
     colors = [mineralcolors[m] for m in ( "quartz", "melt", "feldspar")]
 
     for j in 1:length(areas)-1
-    t = (areas[j] .< earth.Area_km2 .< areas[j+1]) .& (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+    t = (areas[j] .< data.Area_km2 .< areas[j+1]) .& (data.Time_interval_yr .> 0) .& (data.Erosion_rate_mm_yr .>0)
     plot!(h[j], title=titles[j])
 
     for i in eachindex(lithology)
         tt = t .& cats[lithology[i]]
-        plot!(h[j], earth.Time_interval_yr[tt], earth.Erosion_rate_mm_yr[tt],
+        plot!(h[j], data.Time_interval_yr[tt], data.Erosion_rate_mm_yr[tt],
             seriestype=:scatter,
             color = colors[i],
             alpha = 0.85,
