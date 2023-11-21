@@ -4,6 +4,10 @@ datadir = "$(@__DIR__)/../data"
 earth = importdataset("$datadir/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
 mars = importdataset("$datadir/glacial_erosion_Mars.tsv", '\t', importas=:Tuple);
 
+ngearth = importdataset("$datadir/nonglacial_erosion_Earth.tsv", '\t', importas=:Tuple)
+ngmars = importdataset("$datadir/nonglacial_erosion_Mars.tsv", '\t', importas=:Tuple)
+
+
 ## --- Utility functions for plotting
 
 # Scatter plot, but plot any points outside of ylims as up/down-ward pointing triangles
@@ -40,25 +44,39 @@ rsquared(x,y,line_y) = 1 - nansum((y .- line_y).^2)  / nansum((y .- nanmean(y)).
 
 ## -- Area vs erosion rate
 
-# h = plot(framestyle=:box,
-#     xlabel="Area [km²]",
-#     ylabel="Erosion rate [mm/yr]",
-#     xscale=:log10,
-#     yscale=:log10,
-#     fontfamily=:Helvetica,
-# )
-#
-# t = (earth.Area_km2 .> 0) .& (earth.Erosion_rate_mm_yr .>0)
-#
-# plot!(h, earth.Area_km2[t], earth.Erosion_rate_mm_yr[t],
-#     seriestype=:scatter,
-#     label="",
-#     color=mineralcolors["corundum"],
-#     alpha=0.85,
-#     mswidth=0.25,
-# )
-#
-# savefig(h, "erosion_rate_vs_area_all.pdf")
+h = plot(framestyle=:box,
+    xlabel="Area [km²]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    xlims = (10^-2.5, 10^7.5),
+    xticks = 10.0.^(-2:7),
+    ylims = (10^-4, 10^3),
+    yticks = 10.0.^(-4:3),
+    fg_color_legend = :white,
+)
+
+t = (ngearth.Area_km2 .> 1e-6) .& (ngearth.Erosion_rate_mm_yr .>0)
+scatternicely!(h, ngearth.Area_km2[t], ngearth.Erosion_rate_mm_yr[t],
+    label="Nonglacial",
+    color=parse(Color, "#dddddd"),
+    alpha=1,
+    mswidth=0,
+)
+
+t = (earth.Area_km2 .> 1e-6) .& (earth.Erosion_rate_mm_yr .>0)
+scatternicely!(h, earth.Area_km2[t], earth.Erosion_rate_mm_yr[t],
+    label="Glacial",
+    color=mineralcolors["azurite"],
+    alpha=0.85,
+    mswidth=0.25,
+)
+
+savefig(h, "area_vs_erosion_rate.pdf")
+display(h)
+
+## -- Area vs erosion rate, Mars
 
 h = plot(framestyle=:box,
     xlabel="Area [km²]",
@@ -66,22 +84,30 @@ h = plot(framestyle=:box,
     xscale=:log10,
     yscale=:log10,
     fontfamily=:Helvetica,
-    xlims = (10^-1, 10^7),
-    xticks = 10.0.^(-1:7),
-    ylims = (10^-3, 10^3),
-    yticks = 10.0.^(-3:3),
+    xlims = (10^-2.5, 10^7.5),
+    xticks = 10.0.^(-2:7),
+    # ylims = (10^-4, 10^3),
+    # yticks = 10.0.^(-4:3),
+    fg_color_legend = :white,
 )
 
-t = (earth.Area_km2 .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Methodology .!== "Cosmogenic surface")
+t = (ngmars.Area_km2 .> 1e-6) .& (ngmars.Erosion_rate_mm_yr .>0)
+scatternicely!(h, ngmars.Area_km2[t], ngmars.Erosion_rate_mm_yr[t],
+    label="Nonglacial",
+    color=parse(Color, "#dddddd"),
+    alpha=1,
+    mswidth=0,
+)
 
-scatternicely!(h, earth.Area_km2[t], earth.Erosion_rate_mm_yr[t],
-    label="",
-    color=mineralcolors["corundum"],
+t = (mars.Area_km2 .> 1e-6) .& (mars.Erosion_rate_mm_yr .>0)
+scatternicely!(h, mars.Area_km2[t], mars.Erosion_rate_mm_yr[t],
+    label="Glacial",
+    color=mineralcolors["rhodochrosite"],
     alpha=0.85,
     mswidth=0.25,
 )
 
-savefig(h, "area_vs_erosion_rate.pdf")
+savefig(h, "area_vs_erosion_rate_Mars.pdf")
 display(h)
 
 
@@ -101,9 +127,17 @@ h = plot(framestyle=:box,
 
 )
 
-type = ( "Outlet ice stream", "Alpine tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
-tlabel = ( "Outlet ice stream", "Alpine tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
-colors = [mineralcolors[m] for m in ("muscovite", "quartz", "azurite", "apatite", "fluid", "rhodochrosite", )]
+t = .!isnan.(ngearth.Latitude) .& (ngearth.Erosion_rate_mm_yr .>0)
+scatternicely!(h, abs.(ngearth.Latitude[t]), ngearth.Erosion_rate_mm_yr[t],
+    label="Nonglacial",
+    color=parse(Color, "#dddddd"),
+    alpha=1,
+    mswidth=0,
+)
+
+type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", "Outlet ice stream", "Dry Valleys",)
+tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "Outlet ice stream", "Dry Valleys",)
+colors = [mineralcolors[m] for m in ("malachite", "zircon", "quartz", "azurite", "fluid", "spessartine", )]
 for i in eachindex(type)
     t = .!isnan.(earth.Latitude) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .== type[i])
     scatternicely!(h, abs.(earth.Latitude[t]), earth.Erosion_rate_mm_yr[t],
@@ -133,6 +167,14 @@ h = plot(framestyle=:box,
 
 )
 
+t = .!isnan.(ngearth.Latitude) .& (ngearth.Erosion_rate_mm_yr .>0)
+scatternicely!(h, abs.(ngearth.Latitude[t]), ngearth.Erosion_rate_mm_yr[t],
+    label="Nonglacial",
+    color=parse(Color, "#dddddd"),
+    alpha=1,
+    mswidth=0,
+)
+
 method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
 mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
 colors = [mineralcolors[m] for m in ( "spessartine", "rhodochrosite", "corundum", "sodalite", "glaucophane")]
@@ -150,6 +192,60 @@ savefig(h, "latitude_vs_erosion_rate-method.pdf")
 display(h)
 
 
+## --- Slope vs erosion rate
+
+h = plot(framestyle=:box,
+    xlabel="Regional slope [m/m]",
+    ylabel="Erosion rate [mm/yr]",
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    fg_color_legend=:white,
+    legend=:bottomright,
+    xlims=(0,0.6),
+    # xticks=0:15:90,
+    ylims = (10^-5, 10^3),
+    yticks = 10.0.^(-5:3),
+
+)
+
+t = .!isnan.(ngearth.Slope_m_km) .& (ngearth.Erosion_rate_mm_yr .> 0)
+slope = ngearth.Slope_m_km[t]./1000
+scatternicely!(h, slope, ngearth.Erosion_rate_mm_yr[t],
+    label="Nonglacial",
+    color=parse(Color, "#dddddd"),
+    alpha=1,
+    mswidth=0,
+)
+aₙ,bₙ = linreg(slope, log10.(ngearth.Erosion_rate_mm_yr[t]))
+xₙ = collect(xlims(h))
+yₙ = @. 10^(aₙ+bₙ*xₙ)
+plot!(h, xₙ, yₙ, color=parse(Color, "#777777"), linestyle=:dash, label="$(round(10^aₙ,digits=3))*10^($(round(bₙ,digits=3)) s)")
+
+type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", "Outlet ice stream", "Dry Valleys",)
+tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "Outlet ice stream", "Dry Valleys",)
+colors = [mineralcolors[m] for m in ("malachite", "zircon", "quartz", "azurite", "fluid", "spessartine", )]
+for i in eachindex(type)
+    t = .!isnan.(earth.Slope_m_km) .& (earth.Erosion_rate_mm_yr .> 0) .& (earth.Type .== type[i])
+    scatternicely!(h, earth.Slope_m_km[t]./1000, earth.Erosion_rate_mm_yr[t],
+        color = colors[i],
+        alpha = 0.85,
+        mswidth = 0.25,
+        label = tlabel[i],
+    )
+end
+
+t = .!isnan.(earth.Slope_m_km) .& (earth.Erosion_rate_mm_yr .> 0) .& (earth.Type .!= "Dry Valleys")
+slope = earth.Slope_m_km[t]./1000
+a,b = linreg(slope, log10.(earth.Erosion_rate_mm_yr[t]))
+x = collect(xlims(h))
+y = @. 10^(a+b*x)
+
+plot!(h, x, y, color=:darkblue, linestyle=:dash, label="$(round(10^a,digits=3))*10^($(round(b,digits=3)) s)")
+
+savefig(h, "slope_vs_erosion_rate-type.pdf")
+display(h)
+
+
 ## --- Timescale vs erosion rate, colored by glacier type (Continental, Alpine, etc.),
 
 h = plot(framestyle=:box,
@@ -164,11 +260,24 @@ h = plot(framestyle=:box,
     xticks = 10.0.^(-2:9),
     ylims = (10^-5, 10^3),
     yticks = 10.0.^(-5:3),
+    # xlims = (10^-2, 10^10),
+    # xticks = 10.0.^(-2:10),
+    # ylims = (10^-8, 10^4),
+    # yticks = 10.0.^(-8:4),
+    # size = (600,600),
 )
 
-type = ( "Outlet ice stream", "Alpine tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
-tlabel = ( "Outlet ice stream", "Alpine tidewater", "Alpine", "High-latitude", "Continental", "Dry Valleys",)
-colors = [mineralcolors[m] for m in ("muscovite", "quartz", "azurite", "apatite", "fluid", "rhodochrosite", )]
+t = (ngearth.Time_interval_yr .> 0) .& (ngearth.Erosion_rate_mm_yr .>0)
+scatternicely!(h, ngearth.Time_interval_yr[t], ngearth.Erosion_rate_mm_yr[t],
+    label="Nonglacial",
+    color=parse(Color, "#dddddd"),
+    alpha=1,
+    mswidth=0,
+)
+
+type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", "Outlet ice stream", "Dry Valleys",)
+tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "Outlet ice stream", "Dry Valleys",)
+colors = [mineralcolors[m] for m in ("malachite", "zircon", "quartz", "azurite", "fluid", "spessartine", )]
 for i in eachindex(type)
     t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .== type[i])
     plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
@@ -183,6 +292,45 @@ end
 savefig(h, "timescale_vs_erosion_rate-type.pdf")
 display(h)
 
+## -- Timescale vs erosion rate, Mars
+
+h = plot(framestyle=:box,
+    xlabel="Timescale [yr]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    fg_color_legend=:white,
+    # xlims = (10^-2, 10^10),
+    # xticks = 10.0.^(-2:10),
+    # ylims = (10^-8, 10^4),
+    # yticks = 10.0.^(-8:4),
+    # size = (600,600),
+    xlims = (10^-2, 10^11),
+    xticks = 10.0.^(-2:11),
+    ylims = (10^-8, 10^2),
+    yticks = 10.0.^(-8:2),
+    # size = (600,600),
+)
+
+t = (ngmars.Time_interval_yr .> 0) .& (ngmars.Erosion_rate_mm_yr .>0)
+scatternicely!(h, ngmars.Time_interval_yr[t], ngmars.Erosion_rate_mm_yr[t],
+    label="Mars, Nonglacial",
+    color=parse(Color, "#f9dfe9"),
+    alpha=1,
+    mswidth=0,
+)
+
+t = (mars.Time_interval_yr .> 0) .& (mars.Erosion_rate_mm_yr .>0)
+scatternicely!(h, mars.Time_interval_yr[t], mars.Erosion_rate_mm_yr[t],
+    label="Mars, Glacial",
+    color=mineralcolors["rhodochrosite"],
+    alpha=0.85,
+    mswidth=0.25,
+)
+
+savefig(h, "timescale_vs_erosion_rate_Mars.pdf")
+display(h)
 
 ## --- Timescale vs erosion rate, colored by measurement method (Cosmogenic, Volumetric, etc.)
 
@@ -198,6 +346,14 @@ h = plot(framestyle=:box,
     xticks = 10.0.^(-2:9),
     ylims = (10^-5, 10^3),
     yticks = 10.0.^(-5:3),
+)
+
+t = (ngearth.Time_interval_yr .> 0) .& (ngearth.Erosion_rate_mm_yr .>0)
+scatternicely!(h, ngearth.Time_interval_yr[t], ngearth.Erosion_rate_mm_yr[t],
+    label="Nonglacial",
+    color=parse(Color, "#dddddd"),
+    alpha=1,
+    mswidth=0,
 )
 
 method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
@@ -226,45 +382,94 @@ end
 savefig(h, "timescale_vs_erosion_rate-method.pdf")
 display(h)
 
+
 ## --- Histogram of erosion rates!
 
+# Pick binning scheme
 t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
 μ = nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
 binedges = (-4:0.2:4) .+ μ
 bincenters = cntr(binedges)
+distx = first(binedges):0.01:last(binedges)
+
 hist = plot(framestyle=:box,
     xlabel="Erosion Rate [mm/yr]",
-    ylabel="N",
+    ylabel="N (nonglacial)",
     xflip=true,
-    fg_color_legend=:white,
     xlims=(10^-5,10^3),
     xticks=10.0.^(-5:3),
     xscale=:log10,
-    size=(600,300)
+    size=(600,300),
+    rotation=90.,
+    xguidefontrotation=180.,
+    yguidefontcolor=parse(Color, "#888888"),
+    ytickfontcolor=parse(Color, "#888888"),
+    fontfamily=:Helvetica,
 )
+
+# Nonglacial erosion
+tng = (ngearth.Time_interval_yr .> 0) .& (ngearth.Erosion_rate_mm_yr .> 0)
+logerosion = log10.(ngearth.Erosion_rate_mm_yr[tng])
+Ns = histcounts(logerosion, binedges, T=Float64)
+plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns),
+    fill=true,
+    color=parse(Color, "#dddddd"),
+    label=""
+)
+
+ngμ, ngσ = nanmean(logerosion), nanstd(logerosion)
+plot!(hist, 10.0.^distx, normpdf(ngμ,ngσ,distx) .* (sum(Ns) * step(binedges)),
+    linestyle=:dot,
+    color=parse(Color, "#888888"),
+    label="",
+)
+
+# Glacial erosion
 Ns = histcounts(log10.(earth.Erosion_rate_mm_yr[t]), binedges)
-plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["rhodochrosite"], label="")
+hist2 = twinx()
+plot!(hist2,
+    framestyle=:box,
+    ylabel="N (glacial)",
+    xflip=true,
+    xlims=(10^-5,10^3),
+    xticks=10.0.^(-5:3),
+    xscale=:log10,
+    size=(600,300),
+    rotation=90.,
+)
+
+plot!(hist2, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["spessartine"], label="")
 
 t .&= earth.Type .!= "Dry Valleys"
 logerosion = log10.(earth.Erosion_rate_mm_yr[t])
-Ns = histcounts(logerosion, binedges)
-plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["fluid"], label="")
+Ns = histcounts(logerosion, binedges, T=Float64)
+plot!(hist2, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["fluid"], label="")
 
-x = first(binedges):0.01:last(binedges)
 μ, σ = nanmean(logerosion), nanstd(logerosion)
-plot!(hist, 10.0.^x, normpdf(μ,σ,x).*(sum(Ns)*step(binedges)),
+plot!(hist2, 10.0.^distx, normpdf(μ,σ,distx) .* (sum(Ns)*step(binedges)),
     linestyle=:dot,
-    color=:black,
+    color=:darkblue,
     label="",
-    )
+)
 
-vline!(hist, [10.0.^μ], color=:black, label="")
-annotate!(hist, [10.0.^μ], [0], text(" $(round(10^μ, digits=2)) mm/yr", 10, :left, :bottom, rotation=90))
+# Clean up y axis limits
+ylims!(hist, 0, 800)
+ylims!(hist2, 0, 70)
 
-annotate!(hist, [10^-4.9], [maximum(ylims())], text("Dry Valleys, East Antarctica ", 10, :right, :bottom, rotation=90, color=mineralcolors["rhodochrosite"]))
-annotate!(hist, [10^2.9], [maximum(ylims())], text("All other rates ", 10, :right, :top, rotation=90, color=mineralcolors["fluid"]))
+# Dry valleys
+annotate!(hist2, [10^-4.3], [maximum(ylims(hist2))], text("Dry Valleys, East Antarctica ", 9, :right, :bottom, rotation=90, color=mineralcolors["spessartine"]))
 
-ylims!(hist, 0, maximum(ylims()))
+# Glacial Gaussian
+annotate!(hist2, [10.0.^μ], [0], text(" $(round(10^μ, digits=2)) mm/yr", 9, :left, :bottom, rotation=90, color=:darkblue))
+vline!(hist2, [10.0.^μ], color=:darkblue, linestyle=:dash, label="")
+annotate!(hist2, [10^μ], [maximum(ylims(hist2))], text("glacial mean ", 9, :right, :bottom, rotation=90, color=:darkblue))
+
+# Nonglacial Gaussian
+annotate!(hist2, [10.0.^ngμ], [0], text(" $(round(10^ngμ, digits=2)) mm/yr", 9, :left, :bottom, rotation=90, color=parse(Color, "#888888")))
+vline!(hist2, [10.0.^ngμ], color=parse(Color, "#888888"), linestyle=:dash, label="")
+annotate!(hist2, [10.0.^ngμ], [maximum(ylims(hist2))], text("nonglacial mean ", 9, :right, :bottom, rotation=90, color=parse(Color, "#888888")))
+
+
 savefig(hist, "erosion_rate_histogram.pdf")
 display(hist)
 
@@ -303,8 +508,8 @@ annotate!(h[1], x, logμ, text("$(round(logμ, digits=2)) mm/yr", 10, :top, colo
 
 
 method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",)
-mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",  "Relief")
-colors = [mineralcolors[m] for m in ( "spessartine", "rhodochrosite", "corundum", "sodalite", "glaucophane")]
+mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric",)
+colors = [mineralcolors[m] for m in ( "spessartine", "rhodochrosite", "corundum", "sodalite",)]
 
 for j in 1:length(areas)-1
     t = (areas[j] .< earth.Area_km2 .< areas[j+1]) .& (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
@@ -340,6 +545,7 @@ h = plot(framestyle=:box,
     ylims=(10^-2.1, 10^0.6),
     yticks=10.0.^(-2:0.5:0.5),
     fg_color_legend=:white,
+    legend=:bottomleft,
 )
 
 # plot!(h, earth.Time_interval_yr, earth.Erosion_rate_mm_yr, color=:black, alpha=0.3, seriestype=:scatter, label="")
@@ -374,30 +580,27 @@ end
 cryocolor=mineralcolors["magnetite"]
 plot!(h, [64e6], [4000*1000/64e6], yerr=[1000*1000/64e6], msc=cryocolor, color=cryocolor, seriestype=:scatter, label="")
 annotate!(h, 2.5e8, 4000*1000/64e6, text("3-5 km\nCryogen.\nerosion", cryocolor, :center, :8))
+savefig(h, "continental_erosion_rates.pdf")
 
-# savefig(h, "continental_erosion_rates.pdf")
-
-# Add Mars!
-marscolor = mineralcolors["almandine"] # parse(Colorant, "#ff0000")
-scatternicely!(h, mars.Time_interval_yr, mars.Erosion_rate_mm_yr;
-    color=marscolor,
-    label="Mars",
-    alpha=0.85,
-    mswidth=0.25,
-    legend=:bottomleft,
-)
-
-# Draw lines for unweighted means of each ice sheet
-mean_erosion = nanmean(mars.Erosion_rate_mm_yr)
-erosion_sigma = nanstd(earth.Erosion_rate_mm_yr)./sqrt(length(mars.Erosion_rate_mm_yr))
-hline!(h, [mean_erosion],
-    linestyle=:dot,
-    color=marscolor,
-    label="",
-)
-annotate!(0.9e9, mean_erosion/1.3, text("Mars,\nunweighted ave.", marscolor, :right, 8, fontfamily=:Helvetica))
-
-savefig(h, "continental_erosion_rates_withmars.pdf")
+# # Add Mars!
+# marscolor = mineralcolors["almandine"] # parse(Colorant, "#ff0000")
+# scatternicely!(h, mars.Time_interval_yr, mars.Erosion_rate_mm_yr;
+#     color=marscolor,
+#     label="Mars",
+#     alpha=0.85,
+#     mswidth=0.25,
+# )
+#
+# # Draw line for unweighted mean
+# mean_erosion = nanmean(mars.Erosion_rate_mm_yr)
+# erosion_sigma = nanstd(earth.Erosion_rate_mm_yr)./sqrt(length(mars.Erosion_rate_mm_yr))
+# hline!(h, [mean_erosion],
+#     linestyle=:dot,
+#     color=marscolor,
+#     label="",
+# )
+# annotate!(0.9e9, mean_erosion/1.3, text("Mars,\nunweighted ave.", marscolor, :right, 8, fontfamily=:Helvetica))
+# savefig(h, "continental_erosion_rates_withmars.pdf")
 
 display(h)
 
@@ -408,11 +611,13 @@ hist = plot(framestyle=:box,
     xlabel="Erosion Rate [mm/yr]",
     ylabel="N",
     xflip=true,
-    fg_color_legend=:white,
     xlims=(10^-5,10^3),
     xticks=10.0.^(-5:3),
     xscale=:log10,
-    size=(600,300)
+    size=(600,300),
+    rotation=90,
+    xguidefontrotation=180.,
+    fontfamily=:Helvetica,
 )
 
 tc = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
@@ -425,7 +630,7 @@ binedges = (-4:0.2:4) .+ μ
 bincenters = cntr(binedges)
 
 # Ns = histcounts(log10.(earth.Erosion_rate_mm_yr[t]), binedges)
-# plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["rhodochrosite"], label="")
+# plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["spessartine"], label="")
 
 regions = ("Greenland", "Fennoscandia", "Antarctica", )
 colors = [mineralcolors[m] for m in ("fluid", "kyanite", "azurite", )]
@@ -448,10 +653,12 @@ plot!(hist, 10.0.^x, normpdf(μ,σ,x).*(count(tc)*step(binedges)),
     color=:black,
     label="",
 )
-vline!(hist, [10.0.^μ], color=:black, label="")
-annotate!(hist, [10.0.^μ], [0], text(" $(round(10^μ, digits=2)) mm/yr", 10, :left, :bottom, rotation=90))
+ylims!(hist, 0, 25)
 
-ylims!(hist, 0, maximum(ylims()))
+vline!(hist, [10.0.^μ], color=:black, linestyle=:dash, label="")
+annotate!(hist, [10.0.^μ], [0], text(" $(round(10^μ, digits=2)) mm/yr ", 9, :left, :bottom, rotation=90))
+# annotate!(hist, [10.0.^μ], [maximum(ylims(hist))], text(" continental mean ", 9, :right, :bottom, rotation=90))
+
 savefig(hist, "continental_erosion_rate_histogram.pdf")
 display(hist)
 
