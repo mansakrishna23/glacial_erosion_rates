@@ -15,35 +15,34 @@
     using Static
     include("lithology_utilities.jl")
 
+    # Functions 
+    stepify(x::AbstractVector) = vec(vcat(x', x'))
+    stepifyedges(x::AbstractVector) = vec(vcat(x[1:end-1]', x[2:end]'))
 
-## --- Load data
-    # data = importdataset("data/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
-    data = importdataset("data/nonglacial_erosion_Earth.tsv", '\t', importas=:Tuple);
 
+## --- [GLACIAL] API request
+    # Load data 
+    glacial_data = importdataset("data/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+    g_location = [(glacial_data.Latitude[i], glacial_data.Longitude[i]) 
+        for i in eachindex(glacial_data.Latitude)]
+    unique_g_location = unique(g_location)
+    g_npoints = length(unique_g_location)
+    g_lats = [unique_g_location[i][1] for i=1:g_npoints]
+    g_lons = [unique_g_location[i][2] for i=1:g_npoints]
 
-    # Get locations, only query each unique location once
-    loc = [(data.Latitude[i], data.Longitude[i]) for i in eachindex(data.Latitude)]
-    loc = unique(loc)
-
-    npoints = length(loc)
-    lats = [loc[i][1] for i=1:npoints]
-    lons = [loc[i][2] for i=1:npoints]
-    
-
-## --- API request (commented out after we get the data)
     # Definitions / Preallocate 
     zoom = 1
-    responses = Array{Any}(undef, npoints, 1)
+    responses = Array{Any}(undef, g_npoints, 1)
 
-    p = Progress(npoints, desc="Querying Macrostrat...")
-    for i = 1:npoints
+    p = Progress(g_npoints, desc="Querying Macrostrat...")
+    for i = 1:g_npoints
         try
-            responses[i] = query_macrostrat(lats[i], lons[i], zoom)
+            responses[i] = query_macrostrat(g_lats[i], g_lons[i], zoom)
         catch
             try
                 # Wait and try again
                 sleep(10)
-                responses[i] = query_macrostrat(lats[i], lons[i], zoom)
+                responses[i] = query_macrostrat(g_lats[i], g_lons[i], zoom)
             catch
                 # If still nothing, move on
                 responses[i] = "No response"
@@ -54,19 +53,251 @@
     end
 
     # Parse output
-    parsed = parse_burwell_responses(responses, npoints)
+    parsed = parse_burwell_responses(responses, g_npoints)
 
     # Save data and references
-    # writedlm("data/lithology_unparsed.tsv", unelementify(parsed))
-    # writedlm("data/lithology_reference.tsv", unique(parsed.refstrings))
-    writedlm("data/lithology_unparsed_nonglacial.tsv", unelementify(parsed))
+    writedlm("data/lithology_unparsed.tsv", hcat(
+        unelementify(parsed), vcat("Latitude", g_lats), vcat("Longitude", g_lons)
+    ))
+    writedlm("data/lithology_reference.tsv", unique(parsed.refstrings))
+
+
+## --- [NONGLACIAL] API request
+    # Load data 
+    nonglacial_data = importdataset("data/nonglacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+    ng_location = [(nonglacial_data.Latitude[i], nonglacial_data.Longitude[i]) 
+        for i in eachindex(nonglacial_data.Latitude)]
+    unique_ng_location = unique(ng_location)
+    ng_npoints = length(unique_ng_location)
+    ng_lats = [unique_ng_location[i][1] for i=1:ng_npoints]
+    ng_lons = [unique_ng_location[i][2] for i=1:ng_npoints]
+
+    # Definitions / Preallocate 
+    zoom = 1
+    responses = Array{Any}(undef, ng_npoints, 1)
+
+    p = Progress(ng_npoints, desc="Querying Macrostrat...")
+    for i = 1:ng_npoints
+        try
+            responses[i] = query_macrostrat(ng_lats[i], ng_lons[i], zoom)
+        catch
+            try
+                # Wait and try again
+                sleep(10)
+                responses[i] = query_macrostrat(ng_lats[i], ng_lons[i], zoom)
+            catch
+                # If still nothing, move on
+                responses[i] = "No response"
+            end
+        end
+        sleep(0.05)
+        next!(p)
+    end
+
+    # Parse output
+    parsed = parse_burwell_responses(responses, ng_npoints)
+
+    # Save data and references
+    writedlm("data/lithology_unparsed_nonglacial.tsv", hcat(
+        unelementify(parsed), vcat("Latitude", ng_lats), vcat("Longitude", ng_lons)
+    ))
     writedlm("data/lithology_reference_nonglacial.tsv", unique(parsed.refstrings))
 
+## --- Some notes on methodology
+    # We don't want to doule-count samples, but also some of the super broad locations
+    # (i.e., country scale) may have more than one glacier.
+    
+    # Therefore, I want to match each erosion rate to each location. Then look at the
+    # individual erosion rates for each glacier. Samples with the same location, lithology, 
+    # and that are taken from the same glacier...
 
+## --- Get lithology for each erosion rate measurement
+    # Load all data again
+    glacial_data = importdataset("data/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+    glacial_parsed = importdataset("data/lithology_unparsed.tsv", '\t', importas=:Tuple);
+
+    nonglacial_data = importdataset("data/nonglacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+    nonglacial_parsed = importdataset("data/lithology_unparsed_nonglacial.tsv", '\t', importas=:Tuple);
+
+    # Get lithology for each unique location
+    glacial_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
+        major=false)
+
+    nonglacial_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
+        major=false) 
+
+    # Fix false positives and make sure major types are inclusive of minor types
+    typelist, minorsed, minorvolc, minorplut, minorign = get_rock_class();
+
+    glacial_cats.cover .= false
+    nonglacial_cats.cover .= false
+
+    glacial_cats.diorite .&= .!glacial_cats.granodiorite
+    nonglacial_cats.diorite .&= .!nonglacial_cats.granodiorite
+    
+    for type in minorsed
+        glacial_cats.sed .|= glacial_cats[type]
+        nonglacial_cats.sed .|= nonglacial_cats[type]
+    end
+    for type in minorvolc
+        glacial_cats.volc .|= glacial_cats[type]
+        nonglacial_cats.volc .|= nonglacial_cats[type]
+    end
+    for type in minorplut
+        glacial_cats.plut .|= glacial_cats[type]
+        nonglacial_cats.plut .|= nonglacial_cats[type]
+    end
+    for type in minorign
+        glacial_cats.ign .|= glacial_cats[type]
+        nonglacial_cats.ign .|= nonglacial_cats[type]
+    end
+
+    # Match glacial lithology to individual points
+    npoints = length(glacial_data.Latitude)
+    gcats = NamedTuple{keys(glacial_cats)}([falses(npoints) for _ in keys(glacial_cats)])
+
+    g_location = [(glacial_data.Latitude[i], glacial_data.Longitude[i]) 
+        for i in eachindex(glacial_data.Latitude)]
+    unique_g_location = [(glacial_parsed.Latitude[i], glacial_parsed.Longitude[i])
+        for i in eachindex(glacial_parsed.Latitude)]
+    
+    for i = 1:npoints
+        # Find the index of the parsed location corresponding to sample i 
+        k = 0
+        for j in eachindex(unique_g_location)
+            if unique_g_location[j] == g_location[i]
+                k = j
+                break
+            end
+        end
+
+        # If there is an index, get the lithology and put it in the new BitVector
+        if k != 0
+            rocks = get_type(glacial_cats, k, all_keys=true)
+            if rocks !== nothing
+                for j in rocks
+                    gcats[j][i] = true
+                end
+            end
+        end
+    end
+
+    # Match nonglacial lithology to individual points
+    npoints = length(nonglacial_data.Latitude)
+    ncats = NamedTuple{keys(nonglacial_cats)}([falses(npoints) for _ in keys(nonglacial_cats)])
+
+    ng_location = [(nonglacial_data.Latitude[i], nonglacial_data.Longitude[i]) 
+        for i in eachindex(nonglacial_data.Latitude)]
+    unique_ng_location = [(nonglacial_parsed.Latitude[i], nonglacial_parsed.Longitude[i])
+        for i in eachindex(nonglacial_parsed.Latitude)]
+    
+    for i = 1:npoints
+        # Find the index of the parsed location corresponding to sample i 
+        k = 0
+        for j in eachindex(unique_ng_location)
+            if unique_ng_location[j] == ng_location[i]
+                k = j
+                break
+            end
+        end
+
+        # If there is an index, get the lithology and put it in the new BitVector
+        if k != 0
+            rocks = get_type(nonglacial_cats, k, all_keys=true)
+            if rocks !== nothing
+                for j in rocks
+                    ncats[j][i] = true
+                end
+            end
+        end
+    end
+
+
+## --- Plot erosion rate by lithology
+    # Limit glacial data
+    # g = (glacial_data.Area_km2 .> 0) .& (glacial_data.Erosion_rate_mm_yr .>0);
+    g = (glacial_data.Erosion_rate_mm_yr .>0);
+    g .&= (glacial_data.Locality .!= "Dry Valleys, East Antarctica");
+
+    # Limit nonglacial data
+    n = (nonglacial_data.Erosion_rate_mm_yr .> 0);
+
+    # Set up for histograms in a loop
+    lim = [g, n]
+    data = [glacial_data, nonglacial_data]
+    cats = [gcats, ncats]
+    fig_names = ["Glacial", "Nonglacial"]
+
+    lith = [:sed, :ign, :met]
+    colors = [mineralcolors[m] for m in ("apatite", "melt", "quartz", )]
+    labels = ["Sedimentary", "Igneous", "Metamorphic"]
+
+    # Make histograms
+    fig = Array{Plots.Plot{Plots.GRBackend}}(undef, 2)
+    for f in eachindex(fig)
+        t = lim[f]
+
+        # Set up histogram
+        μ = nanmean(log10.(data[f].Erosion_rate_mm_yr[t]))
+        binedges = (-4:0.2:4) .+ μ
+        bincenters = cntr(binedges)
+        stepc = 0.2
+
+        hist = plot(framestyle=:box,
+            # xlabel="Erosion Rate [mm/yr]",
+            ylabel="Abundance",
+            xflip=false,
+            grid=false,
+            fg_color_legend=:white,
+            xlims=(10^-5,10^3),
+            # xticks=10.0.^(-5:3),
+            xticks = false,
+            xscale=:log10,
+            size=(600,300),
+            bottom_margin=(15,:px), left_margin=(15,:px)
+        )
+
+        # Plot each lithology
+        for i in eachindex(lith)
+            n = histcounts(log10.(data[f].Erosion_rate_mm_yr[cats[f][lith[i]] .& t]), binedges, T=Float64);
+            n ./= nansum(n) * stepc
+            plot!(hist, 10.0.^stepifyedges(binedges), stepify(n), fill=true, alpha=0.35,
+                color=colors[i], label=""
+            )
+        end
+
+        # Plot each PDF
+        for i in eachindex(lith)
+            logerosion = log10.(data[f].Erosion_rate_mm_yr[cats[f][lith[i]] .& t])
+            μ, σ = nanmean(logerosion), nanstd(logerosion)
+
+            plot!(hist, 10.0.^x, normpdf(μ,σ,x).*(sum(nsed)*step(binedges)),
+            linestyle=:solid, linewidth=2,
+            color=colors[i],
+            label=labels[i],
+        )
+        end
+
+        # Label
+        annotate!(((0.12, 0.92), (fig_names[f], 12)))
+
+        # display(hist)
+        fig[f] = hist
+    end
+
+    # Assemble subplots into one plot
+    xticks!(fig[2], 10.0.^(-5:3))
+    xlabel!(fig[2], "Erosion Rate [mm/yr]")
+    fig[2] = plot(fig[2], legend=false)
+
+    h = plot(fig..., layout=(2,1), size=(600,600))
+    savefig(h, "erosion_rate_vs_lithology_all.pdf")
+
+    
 ## --- Parse responses into useable data
     # Load responses if you already have them!
-    # parsed = importdataset("data/lithology_unparsed.tsv", '\t', importas=:Tuple)
-    parsed = importdataset("data/lithology_unparsed_nonglacial.tsv", '\t', importas=:Tuple)
+    parsed = importdataset("data/lithology_unparsed.tsv", '\t', importas=:Tuple)
+    # parsed = importdataset("data/lithology_unparsed_nonglacial.tsv", '\t', importas=:Tuple)
 
     # Match each to a rock name
     rock_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
@@ -169,130 +400,6 @@
     end
 
 
-## --- Plot erosion by major rock type (sed, ign, met)
-    t = @. !isnan(data.Time_interval_yr) & !isnan(data.Erosion_rate_mm_yr);
-    t .&= (data.Time_interval_yr .> 0) .& (data.Erosion_rate_mm_yr .> 0);
-    h = plot(framestyle=:box, xlabel="Time Interval [yr]", ylabel="Erosion Rate [mm/yr]")
-    
-    plot!(h, data.Time_interval_yr[cats.ign .& t], data.Erosion_rate_mm_yr[cats.ign .& t], 
-        seriestype=:scatter, label="Igneous",)
-    plot!(h, data.Time_interval_yr[cats.sed .& t], data.Erosion_rate_mm_yr[cats.sed .& t], 
-        seriestype=:scatter, label="Sedimentary",)
-    plot!(h, data.Time_interval_yr[cats.met .& t], data.Erosion_rate_mm_yr[cats.met .& t], 
-        seriestype=:scatter, label="Metamorphic",
-        yaxis=:log10, xaxis=:log10, legend=:bottomleft
-    )
-
-
-## --- Analyze + Plot
-    # Exclude areas without data and Antarctic Dry Valleys
-    t = (data.Area_km2 .> 0) .& (data.Erosion_rate_mm_yr .>0);
-    t .&=  data.Locality .!= "Dry Valleys, East Antarctica";
-    
-    # Average erosion rate by rock type
-    ignμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.ign .& t]))
-    volcμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.volc .& t]))
-    plutμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.plut .& t]))
-    
-    sedμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.sed .& t]))
-    metμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.met .& t]))
-
-    # Weighted by area
-    ignμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.ign .& t]), data.Area_km2[cats.ign .& t])
-    volcμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.volc .& t]), data.Area_km2[cats.volc .& t])
-    plutμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.plut .& t]), data.Area_km2[cats.plut .& t])
-    
-    sedμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.sed .& t]), data.Area_km2[cats.sed .& t])
-    metμ = nanmean(log10.(data.Erosion_rate_mm_yr[cats.met .& t]), data.Area_km2[cats.met .& t])
-
-## --- Functions
-    stepify(x::AbstractVector) = vec(vcat(x', x'))
-    stepifyedges(x::AbstractVector) = vec(vcat(x[1:end-1]', x[2:end]'))
-
-
-## --- Histograms of erosion rate by lithology
-    # Exclude areas without data and Antarctic Dry Valleys
-    t = (data.Area_km2 .> 0) .& (data.Erosion_rate_mm_yr .>0);
-    # dv = (data.Locality .== "Dry Valleys, East Antarctica") .& t;
-    t .&= (data.Locality .!= "Dry Valleys, East Antarctica");
-
-    # All erosion rates, including dry valleys
-    μ = nanmean(log10.(data.Erosion_rate_mm_yr[t]))
-    binedges = (-4:0.2:4) .+ μ
-    bincenters = cntr(binedges)
-    stepc = step(binedges)
-
-    # Calculate mean and standard deviation for each lithology
-    x = first(binedges):0.01:last(binedges)
-    logerosion = log10.(data.Erosion_rate_mm_yr[cats.sed .& t])
-    sedμ, sedσ = nanmean(logerosion), nanstd(logerosion)
-
-    logerosion = log10.(data.Erosion_rate_mm_yr[cats.ign .& t])
-    ignμ, ignσ = nanmean(logerosion), nanstd(logerosion)
-
-    logerosion = log10.(data.Erosion_rate_mm_yr[cats.met .& t])
-    metμ, metσ = nanmean(logerosion), nanstd(logerosion)
-
-    # And for dry valleys
-    # logerosion = log10.(data.Erosion_rate_mm_yr[dv])
-    # dvμ, dvσ = nanmean(logerosion), nanstd(logerosion)
-
-    # Plot histograms
-    hist = plot(framestyle=:box,
-        xlabel="Erosion Rate [mm/yr]",
-        ylabel="N",
-        xflip=false,
-        fg_color_legend=:white,
-        xlims=(10^-5,10^3),
-        xticks=10.0.^(-5:3),
-        xscale=:log10,
-        size=(600,300)
-    )
-
-    nsed = histcounts(log10.(data.Erosion_rate_mm_yr[cats.sed .& t]), binedges);
-    nsed = float(nsed) ./ nansum(float(nsed) .* stepc)
-    plot!(hist, 10.0.^stepifyedges(binedges), stepify(nsed), fill=true, alpha=0.5,
-        color=mineralcolors["quartz"], label=""
-    )
-
-    nign = histcounts(log10.(data.Erosion_rate_mm_yr[cats.ign .& t]), binedges);
-    nign = float(nign) ./ nansum(float(nign) .* stepc)
-    plot!(hist, 10.0.^stepifyedges(binedges), stepify(nign), fill=true, alpha=0.5,
-        color=mineralcolors["melt"], label=""
-    )
-
-    nmet = histcounts(log10.(data.Erosion_rate_mm_yr[cats.met .& t]), binedges);
-    nmet = float(nmet) ./ nansum(float(nmet) .* stepc)
-    plot!(hist, 10.0.^stepifyedges(binedges), stepify(nmet), fill=true, alpha=0.5,
-        color=mineralcolors["feldspar"], label=""
-    )
-
-    # Dry valleys?
-    # ndv = histcounts(log10.(data.Erosion_rate_mm_yr[dv]), binedges);
-    # ndv = float(nign) ./ nansum(float(nign) .* stepc)
-    # plot!(hist, 10.0.^stepifyedges(binedges), stepify(nmet), fill=true, alpha=0.5,
-    #     color=mineralcolors["crocite"], label=""
-    # )
-
-    # Plot PDFs    
-    plot!(hist, 10.0.^x, normpdf(sedμ,sedσ,x).*(sum(nsed)*step(binedges)),
-        linestyle=:solid, linewidth=2,
-        color=mineralcolors["quartz"],
-        label="Sedimentary",
-    )
-    plot!(hist, 10.0.^x, normpdf(ignμ,ignσ,x).*(sum(nign)*step(binedges)),
-        linestyle=:solid, linewidth=2,
-        color=mineralcolors["melt"],
-        label="Igneous",
-    )
-    plot!(hist, 10.0.^x, normpdf(metμ,metσ,x).*(sum(nmet)*step(binedges)),
-        linestyle=:solid, linewidth=2,
-        color=mineralcolors["feldspar"],
-        label="Metamorphic",
-    )
-    display(hist)
-    # savefig(hist, "erosion_rate_vs_lithology.pdf")
-    savefig(hist, "erosion_rate_vs_lithology_nonglacial.pdf")
 
 
 ## --- Repeat erosion rate vs. timescale for area bins by lithology rather than method
