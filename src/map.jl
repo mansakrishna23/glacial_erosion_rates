@@ -1,19 +1,19 @@
 
 ## --- Load packages and read data
-# using GeoMakie, CairoMakie, Colors
-# using StatGeochem
-#
-# # ETOPO gobal elevation dataset
-# etopo = get_etopo()
-#
-# # Country outlines, from GeoMakie examples
-# countries_file = download("https://datahub.io/core/geo-countries/r/countries.geojson")
-# countries = GeoMakie.GeoJSON.read(read(countries_file, String))
-#
-# # Erosion rate data
-# datadir = "$(@__DIR__)/../data"
-# earth = importdataset("$datadir/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
-# ngearth = importdataset("$datadir/nonglacial_erosion_Earth.tsv", '\t', importas=:Tuple)
+using GeoMakie, CairoMakie, Colors
+using StatGeochem
+
+# ETOPO gobal elevation dataset
+etopo = get_etopo()
+
+# Country outlines, from GeoMakie examples
+countries_file = download("https://datahub.io/core/geo-countries/r/countries.geojson")
+countries = GeoMakie.GeoJSON.read(read(countries_file, String))
+
+# Erosion rate data
+datadir = "$(@__DIR__)/../data"
+earth = importdataset("$datadir/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
+ngearth = importdataset("$datadir/nonglacial_erosion_Earth.tsv", '\t', importas=:Tuple)
 
 
 ## --- Plot background
@@ -21,7 +21,7 @@
 # Our Makie scene
 # We'll use the Kavrayskiy VII projection
 fig = Figure()
-ax = GeoAxis(fig[2,1:2],
+ax = GeoAxis(fig[1,1],
     dest="+proj=kav7",
 )
 
@@ -41,10 +41,10 @@ elev[elev .< -emax] .= -emax
 sf = surface!(ax, lon, lat, elev;
     shading = false
 )
-cb1 = Colorbar(fig[1,2], sf;
+cb1 = Colorbar(fig[2,1], sf;
     label = "Elevation [m]",
     vertical = false,
-    width = Relative(0.8)
+    width = Relative(0.7)
 )
 
 n = length(countries)
@@ -73,9 +73,9 @@ scatter!(ax, ngearth.Longitude[t], ngearth.Latitude[t];
 #     strokecolor = :white,
 # )
 
-type = ( "Alpine", "Continental", "High-latitude", "Dry Valleys",)# "Outlet ice stream", )
-tlabel = ( "Alpine", "Continental", "Non-cont. high-lat.", "Dry Valleys",)# "Ice stream", )
-colors = [mineralcolors[m] for m in ("zircon", "azurite", "quartz", "spessartine", "fluid", )]
+type = ( "Outlet ice stream", "Continental", "High-latitude", "Dry Valleys", "Alpine", )
+tlabel = ( "Ice stream", "Continental", "Non-cont. high-lat.", "Dry Valleys", "Alpine", )
+colors = [mineralcolors[m] for m in ("fluid", "azurite", "quartz", "spessartine", "zircon", )]
 for i in eachindex(type)
     t = contains.(earth.Type, type[i]) .& (earth.Erosion_rate_mm_yr .> 0)
     scatter!(ax, earth.Longitude[t], earth.Latitude[t];
@@ -87,10 +87,10 @@ for i in eachindex(type)
     )
 end
 
-
-fig[1, 1] = Legend(fig, ax, "Location",
-    framevisible = false,
-)
+# # Legend
+# fig[1, 1] = Legend(fig, ax, "Location",
+#     framevisible = false,
+# )
 
 fig
 
