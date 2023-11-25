@@ -41,11 +41,11 @@ elev[elev .< -emax] .= -emax
 sf = surface!(ax, lon, lat, elev;
     shading = false
 )
-cb1 = Colorbar(fig[2,1], sf;
-    label = "Elevation [m]",
-    vertical = false,
-    width = Relative(0.7)
-)
+# cb1 = Colorbar(fig[2,1], sf;
+#     label = "Elevation [m]",
+#     vertical = false,
+#     width = Relative(0.7)
+# )
 
 n = length(countries)
 hm = poly!(ax, countries;
