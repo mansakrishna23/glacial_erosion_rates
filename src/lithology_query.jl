@@ -102,14 +102,7 @@
         unelementify(parsed), vcat("Latitude", ng_lats), vcat("Longitude", ng_lons)
     ))
     writedlm("data/lithology_reference_nonglacial.tsv", unique(parsed.refstrings))
-
-## --- Some notes on methodology
-    # We don't want to doule-count samples, but also some of the super broad locations
-    # (i.e., country scale) may have more than one glacier.
     
-    # Therefore, I want to match each erosion rate to each location. Then look at the
-    # individual erosion rates for each glacier. Samples with the same location, lithology, 
-    # and that are taken from the same glacier...
 
 ## --- Get lithology for each erosion rate measurement
     # Load all data again
