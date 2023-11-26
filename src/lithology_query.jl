@@ -120,18 +120,23 @@
     nonglacial_parsed = importdataset("data/lithology_unparsed_nonglacial.tsv", '\t', importas=:Tuple);
 
     # Get lithology for each unique location
-    glacial_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
-        major=false)
+    glacial_cats = match_rocktype(glacial_parsed.rocktype, glacial_parsed.rockname, 
+        glacial_parsed.rockdescrip, major=false)
 
-    nonglacial_cats = match_rocktype(parsed.rocktype, parsed.rockname, parsed.rockdescrip, 
-        major=false) 
+    nonglacial_cats = match_rocktype(nonglacial_parsed.rocktype, nonglacial_parsed.rockname, 
+        nonglacial_parsed.rockdescrip, major=false) 
 
     # Fix false positives and make sure major types are inclusive of minor types
     typelist, minorsed, minorvolc, minorplut, minorign = get_rock_class();
 
+    # Cover can be sedimentary, why not
+    # glacial_cats.sed .|= glacial_cats.cover
+    # nonglacial_cats.sed .|= nonglacial_cats.cover
+    
     glacial_cats.cover .= false
     nonglacial_cats.cover .= false
 
+    # Diorite is not granodiorite, not that it really matters here
     glacial_cats.diorite .&= .!glacial_cats.granodiorite
     nonglacial_cats.diorite .&= .!nonglacial_cats.granodiorite
     
@@ -218,9 +223,11 @@
     # g = (glacial_data.Area_km2 .> 0) .& (glacial_data.Erosion_rate_mm_yr .>0);
     g = (glacial_data.Erosion_rate_mm_yr .>0);
     g .&= (glacial_data.Locality .!= "Dry Valleys, East Antarctica");
+    # g .&= (glacial_data.Methodology .!= "Cosmogenic surface")
 
     # Limit nonglacial data
     n = (nonglacial_data.Erosion_rate_mm_yr .> 0);
+    # n .&= (nonglacial_data.Methodology .!= "Cosmogenic surface")
 
     # Set up for histograms in a loop
     lim = [g, n]
@@ -241,7 +248,7 @@
         μ = nanmean(log10.(data[f].Erosion_rate_mm_yr[t]))
         binedges = (-4:0.2:4) .+ μ
         bincenters = cntr(binedges)
-        stepc = 0.2
+        stepc = step(bincenters)
 
         hist = plot(framestyle=:box,
             # xlabel="Erosion Rate [mm/yr]",
@@ -259,9 +266,10 @@
 
         # Plot each lithology
         for i in eachindex(lith)
-            n = histcounts(log10.(data[f].Erosion_rate_mm_yr[cats[f][lith[i]] .& t]), binedges, T=Float64);
+            n = histcounts(log10.(data[f].Erosion_rate_mm_yr[cats[f][lith[i]] .& t]), 
+                binedges, T=Float64);
             n ./= nansum(n) * stepc
-            plot!(hist, 10.0.^stepifyedges(binedges), stepify(n), fill=true, alpha=0.35,
+            plot!(hist, 10.0.^stepifyedges(binedges), stepify(n), fill=true, alpha=0.3,
                 color=colors[i], label=""
             )
         end
@@ -279,7 +287,8 @@
         end
 
         # Label
-        annotate!(((0.12, 0.92), (fig_names[f], 12)))
+        annotate!(((0.05, 0.95), (fig_names[f] * "\nn = $(count(t))", 12, :left, :top)))
+        # annotate!((fig_names[f], 14, :left, :top))
 
         # display(hist)
         fig[f] = hist
@@ -291,9 +300,10 @@
     fig[2] = plot(fig[2], legend=false)
 
     h = plot(fig..., layout=(2,1), size=(600,600))
+    display(h)
     savefig(h, "erosion_rate_vs_lithology_all.pdf")
 
-    
+
 ## --- Parse responses into useable data
     # Load responses if you already have them!
     parsed = importdataset("data/lithology_unparsed.tsv", '\t', importas=:Tuple)
