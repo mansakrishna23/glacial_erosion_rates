@@ -357,6 +357,18 @@ savefig(hist, "erosion_rate_histogram.pdf")
 display(hist)
 
 
+plot!(hist,
+    xlims=(10^-8,10^3),
+    xticks=10.0.^(-8:3),
+)
+plot!(hist2,
+    xlims=(10^-8,10^3),
+    xticks=10.0.^(-8:3),
+)
+savefig(hist, "erosion_rate_histogram_taller.pdf")
+# display(hist)
+
+
 ## --- Timescale vs erosion rate, binned by area, wide version (glacial)
 
 hg = plot(layout = (1,4),
