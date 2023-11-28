@@ -185,7 +185,7 @@ scatternicely!(h, slope, ngearth.Erosion_rate_mm_yr[t],
 aₙ,bₙ = linreg(slope, log10.(ngearth.Erosion_rate_mm_yr[t]))
 xₙ = collect(xlims(h))
 yₙ = @. 10^(aₙ+bₙ*xₙ)
-plot!(h, xₙ, yₙ, color=parse(Color, "#777777"), linestyle=:dash, label="$(round(10^aₙ,digits=3))*10^($(round(bₙ,digits=3)) s)")
+plot!(h, xₙ, yₙ, color=parse(Color, "#777777"), linestyle=:dot, label="$(round(10^aₙ,digits=3))*10^($(round(bₙ,digits=3)) s)")
 
 type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", "Outlet ice stream", "Dry Valleys",)
 tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "Outlet ice stream", "Dry Valleys",)
@@ -206,7 +206,7 @@ a,b = linreg(slope, log10.(earth.Erosion_rate_mm_yr[t]))
 x = collect(xlims(h))
 y = @. 10^(a+b*x)
 
-plot!(h, x, y, color=:darkblue, linestyle=:dash, label="$(round(10^a,digits=3))*10^($(round(b,digits=3)) s)")
+plot!(h, x, y, color=:darkblue, linestyle=:dot, label="$(round(10^a,digits=3))*10^($(round(b,digits=3)) s)")
 
 savefig(h, "slope_vs_erosion_rate-type.pdf")
 display(h)
@@ -345,7 +345,7 @@ plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns),
 
 ngμ, ngσ = nanmean(logerosion), nanstd(logerosion)
 plot!(hist, 10.0.^distx, normpdf(ngμ,ngσ,distx) .* (sum(Ns) * step(binedges)),
-    linestyle=:dot,
+    linestyle=:solid,
     color=parse(Color, "#888888"),
     label="",
 )
@@ -373,7 +373,7 @@ plot!(hist2, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineral
 
 μ, σ = nanmean(logerosion), nanstd(logerosion)
 plot!(hist2, 10.0.^distx, normpdf(μ,σ,distx) .* (sum(Ns)*step(binedges)),
-    linestyle=:dot,
+    linestyle=:solid,
     color=:darkblue,
     label="",
 )
@@ -387,12 +387,12 @@ annotate!(hist2, [10^-4.3], [maximum(ylims(hist2))], text("Dry Valleys Cosmogeni
 
 # Glacial Gaussian
 annotate!(hist2, [10.0.^μ], [0], text(" $(round(10^μ, sigdigits=2)) mm/yr", 7, :left, :bottom, rotation=90, color=:darkblue))
-vline!(hist2, [10.0.^μ], color=:darkblue, linestyle=:dash, label="")
+vline!(hist2, [10.0.^μ], color=:darkblue, linestyle=:dot, label="")
 annotate!(hist2, [10^μ], [maximum(ylims(hist2))], text("glacial ", 7, :right, :bottom, rotation=90, color=:darkblue))
 
 # Nonglacial Gaussian
 annotate!(hist2, [10.0.^ngμ], [0], text(" $(round(10^ngμ, sigdigits=2)) mm/yr", 7, :left, :bottom, rotation=90, color=parse(Color, "#888888")))
-vline!(hist2, [10.0.^ngμ], color=parse(Color, "#888888"), linestyle=:dash, label="")
+vline!(hist2, [10.0.^ngμ], color=parse(Color, "#888888"), linestyle=:dot, label="")
 annotate!(hist2, [10.0.^ngμ], [maximum(ylims(hist2))], text("nonglacial ", 7, :right, :bottom, rotation=90, color=parse(Color, "#888888")))
 
 
@@ -430,7 +430,7 @@ annotate!(hg[1], xl*10, 600/(xl*10), text("600 mm", 10, :bottom, :left, color=:r
 t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .!= "Dry Valleys")
 logμ = 10^nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
 for j in 1:length(areas)-1
-    hline!(hg[j], [logμ], color=:darkblue, label="") # , linestyle=:dash
+    hline!(hg[j], [logμ], color=:darkblue, label="", linestyle=:dot)
 end
 annotate!(hg[1], xl*3, logμ, text("$(round(logμ, digits=2)) mm/yr", 10, :top, :left, color=:darkblue,))
 
@@ -492,7 +492,7 @@ annotate!(hng[1], xl*10, 600/(xl*10), text("600 mm", 10, :bottom, :left, color=:
 t = (ngearth.Time_interval_yr .> 0) .& (ngearth.Erosion_rate_mm_yr .>0) .& (ngearth.Type .!= "Dry Valleys")
 logμ = 10^nanmean(log10.(ngearth.Erosion_rate_mm_yr[t]))
 for j in 1:length(areas)-1
-    hline!(hng[j], [logμ], color=parse(Color, "#666666"), label="") # , linestyle=:dash
+    hline!(hng[j], [logμ], color=parse(Color, "#666666"), label="", linestyle=:dot)
 end
 annotate!(hng[1], xl*3, logμ, text("$(round(logμ, sigdigits=2)) mm/yr", 10, :top, :left, color=parse(Color, "#666666"),))
 
@@ -680,13 +680,13 @@ end
 
 x = first(binedges):0.01:last(binedges)
 plot!(hist, 10.0.^x, normpdf(μ,σ,x).*(count(tc)*step(binedges)),
-    linestyle=:dot,
+    linestyle=:solid,
     color=:black,
     label="",
 )
 ylims!(hist, 0, maximum(ylims(hist)))
 
-vline!(hist, [10.0.^μ], color=:black, linestyle=:dash, label="")
+vline!(hist, [10.0.^μ], color=:black, linestyle=:dot, label="")
 annotate!(hist, [10.0.^μ], [0], text(" $(round(10^μ, sigdigits=2)) mm/yr ", 7, :left, :bottom, rotation=90))
 annotate!(hist, [10.0.^μ], [maximum(ylims(hist))], text(" continental ", 7, :right, :bottom, rotation=90))
 
@@ -759,7 +759,9 @@ scatternicely!(h, mars.Time_interval_yr[t], mars.Erosion_rate_mm_yr[t],
 )
 
 x = collect(xlims(h))
-plot!(h, x, (10^5)./x, color=:red, label="")
+plot!(h, x, (10^5)./x, color=:darkred, label="", linestyle=:dash)
+xl = minimum(x)
+annotate!(h, xl*1000, (10^5)/(xl*1000), text("100 m", 10, :bottom, :left, color=:darkred, rotation=-45.0))
 
 savefig(h, "Mars_timescale_vs_erosion_rate.pdf")
 display(h)
@@ -801,7 +803,7 @@ plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns),
 
 ngμ, ngσ = nanmean(logerosion), nanstd(logerosion)
 plot!(hist, 10.0.^distx, normpdf(ngμ,ngσ,distx) .* (sum(Ns) * step(binedges)),
-    linestyle=:dot,
+    linestyle=:solid,
     color=parse(Color, "#764a54"),
     label="",
 )
@@ -826,7 +828,7 @@ plot!(hist2, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineral
 
 μ, σ = nanmean(logerosion), nanstd(logerosion)
 plot!(hist2, 10.0.^distx, normpdf(μ,σ,distx) .* (sum(Ns)*step(binedges)),
-    linestyle=:dot,
+    linestyle=:solid,
     color=:darkred,
     label="",
 )
@@ -838,12 +840,12 @@ ylims!(hist2, 0, 4)
 
 # Glacial Gaussian
 annotate!(hist2, [10.0.^μ], [0], text(" $(round(10^(μ+3), digits=2))e-3 mm/yr", 7, :left, :bottom, rotation=90, color=:darkred))
-vline!(hist2, [10.0.^μ], color=:darkred, linestyle=:dash, label="")
+vline!(hist2, [10.0.^μ], color=:darkred, linestyle=:dot, label="")
 annotate!(hist2, [10^μ], [maximum(ylims(hist2))], text("glacial ", 7, :right, :bottom, rotation=90, color=:darkred))
 
 # Nonglacial Gaussian
 annotate!(hist2, [10.0.^ngμ], [0], text(" $(round(10^(ngμ+3), digits=2))e-3 mm/yr", 7, :left, :bottom, rotation=90, color=parse(Color, "#764a54")))
-vline!(hist2, [10.0.^ngμ], color=parse(Color, "#764a54"), linestyle=:dash, label="")
+vline!(hist2, [10.0.^ngμ], color=parse(Color, "#764a54"), linestyle=:dot, label="")
 annotate!(hist2, [10.0.^ngμ], [maximum(ylims(hist2))], text("nonglacial ", 7, :right, :bottom, rotation=90, color=parse(Color, "#764a54")))
 
 
