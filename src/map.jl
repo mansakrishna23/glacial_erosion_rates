@@ -1,4 +1,3 @@
-
 ## --- Load packages and read data
 using GeoMakie, CairoMakie, Colors
 using StatGeochem
@@ -20,9 +19,10 @@ ngearth = importdataset("$datadir/nonglacial_erosion_Earth.tsv", '\t', importas=
 
 # Our Makie scene
 # We'll use the Kavrayskiy VII projection
-fig = Figure()
+fig = Figure(backgroundcolor=:transparent)
 ax = GeoAxis(fig[1,1],
     dest="+proj=kav7",
+    backgroundcolor=:transparent,
 )
 
 scalefactor = 20
@@ -39,8 +39,17 @@ elev[elev .> emax] .= emax
 elev[elev .< -emax] .= -emax
 
 sf = surface!(ax, lon, lat, elev;
-    shading = false
+    shading = false,
 )
+
+save("map.png", fig, px_per_unit=2)
+
+fig = Figure(backgroundcolor=:transparent)
+ax = GeoAxis(fig[1,1],
+    dest="+proj=kav7",
+    backgroundcolor=:transparent,
+)
+
 # cb1 = Colorbar(fig[2,1], sf;
 #     label = "Elevation [m]",
 #     vertical = false,
@@ -96,7 +105,7 @@ fig
 
 ## -- Save results
 
-save("map.png", fig, px_per_unit=2)
+save("mappoints.png", fig, px_per_unit=2)
 
 
 ## --- End of File
