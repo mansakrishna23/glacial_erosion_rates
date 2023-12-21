@@ -42,7 +42,7 @@ sf = surface!(ax, lon, lat, elev;
     shading = false,
 )
 
-save("map.png", fig, px_per_unit=2)
+save("mapbackground.png", fig, px_per_unit=2)
 
 fig = Figure(backgroundcolor=:transparent)
 ax = GeoAxis(fig[1,1],
@@ -73,6 +73,7 @@ scatter!(ax, ngearth.Longitude[t], ngearth.Latitude[t];
     label = "Nonglacial ($(count(t)))",
     markersize = 10,
 )
+@info "Nonglacial ($(count(t)))"
 # t = earth.Erosion_rate_mm_yr .> 0
 # scatter!(ax, earth.Longitude[t], earth.Latitude[t];
 #     color = mineralcolors["fluid"],
@@ -82,11 +83,11 @@ scatter!(ax, ngearth.Longitude[t], ngearth.Latitude[t];
 #     strokecolor = :white,
 # )
 
-type = ( "Outlet ice stream", "Continental", "High-latitude", "Dry Valleys", "Alpine", )
-tlabel = ( "Ice stream", "Continental", "Non-cont. high-lat.", "Dry Valleys", "Alpine", )
-colors = [mineralcolors[m] for m in ("fluid", "azurite", "quartz", "spessartine", "zircon", )]
+type = ( "Outlet ice stream", "Continental", "High-latitude", "Alpine tidewater", "Alpine", )
+tlabel = ( "Ice stream", "Continental", "Non-cont. high-lat.", "Alpine tidewater", "Alpine", )
+colors = [mineralcolors[m] for m in ("fluid", "quartz", "azurite", "malachite", "zircon", )]
 for i in eachindex(type)
-    t = contains.(earth.Type, type[i]) .& (earth.Erosion_rate_mm_yr .> 0)
+    t = (earth.Type .== type[i]) .& (earth.Erosion_rate_mm_yr .> 0)
     scatter!(ax, earth.Longitude[t], earth.Latitude[t];
         color = colors[i],
         label = "$(tlabel[i]) ($(count(t)))",
@@ -94,6 +95,7 @@ for i in eachindex(type)
         strokewidth = 0.5,
         strokecolor = :white,
     )
+    @info "$(tlabel[i]) ($(count(t)))"
 end
 
 # # Legend

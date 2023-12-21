@@ -1,8 +1,8 @@
 using StatGeochem, Plots
 
 datadir = "$(@__DIR__)/../data"
-earth = importdataset("$datadir/glacial_erosion_Earth.tsv", '\t', importas=:Tuple);
-mars = importdataset("$datadir/glacial_erosion_Mars.tsv", '\t', importas=:Tuple);
+earth = importdataset("$datadir/glacial_erosion_Earth.tsv", '\t', importas=:Tuple)
+mars = importdataset("$datadir/glacial_erosion_Mars.tsv", '\t', importas=:Tuple)
 
 ngearth = importdataset("$datadir/nonglacial_erosion_Earth.tsv", '\t', importas=:Tuple)
 ngmars = importdataset("$datadir/nonglacial_erosion_Mars.tsv", '\t', importas=:Tuple)
@@ -69,9 +69,9 @@ xₙ = collect(xlims(h))
 yₙ = @. 10^(aₙ+bₙ*xₙ)
 plot!(h, xₙ, yₙ, color=parse(Color, "#777777"), linestyle=:dot, label="$(round(10^aₙ,digits=3))*10^($(round(bₙ,digits=3)) s)")
 
-type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", "Outlet ice stream", "Dry Valleys",)
-tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "Outlet ice stream", "Dry Valleys",)
-colors = [mineralcolors[m] for m in ("malachite", "zircon", "quartz", "azurite", "fluid", "spessartine", )]
+type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", "Outlet ice stream", )
+tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "Outlet ice stream", )
+colors = [mineralcolors[m] for m in ("malachite", "zircon", "azurite", "quartz", "fluid", )]
 for i in eachindex(type)
     t = .!isnan.(earth.Slope_m_km) .& (earth.Erosion_rate_mm_yr .> 0) .& (earth.Type .== type[i])
     scatternicely!(h, earth.Slope_m_km[t]./1000, earth.Erosion_rate_mm_yr[t],
@@ -82,7 +82,7 @@ for i in eachindex(type)
     )
 end
 
-t = .!isnan.(earth.Slope_m_km) .& (earth.Erosion_rate_mm_yr .> 0) .& (earth.Type .!= "Dry Valleys")
+t = .!isnan.(earth.Slope_m_km) .& (earth.Erosion_rate_mm_yr .> 0) 
 slope = earth.Slope_m_km[t]./1000
 a,b = linreg(slope, log10.(earth.Erosion_rate_mm_yr[t]))
 x = collect(xlims(h))
@@ -117,9 +117,9 @@ scatternicely!(h, abs.(ngearth.Latitude[t]), ngearth.Erosion_rate_mm_yr[t],
     mswidth=0,
 )
 
-type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", "Outlet ice stream", "Dry Valleys",)
-tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "Outlet ice stream", "Dry Valleys",)
-colors = [mineralcolors[m] for m in ("malachite", "zircon", "quartz", "azurite", "fluid", "spessartine", )]
+type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", "Outlet ice stream",)
+tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "Outlet ice stream", )
+colors = [mineralcolors[m] for m in ("malachite", "zircon", "azurite", "quartz", "fluid", )]
 for i in eachindex(type)
     t = .!isnan.(earth.Latitude) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .== type[i])
     scatternicely!(h, abs.(earth.Latitude[t]), earth.Erosion_rate_mm_yr[t],
@@ -223,3 +223,12 @@ end
 
 savefig(h, "timescale_vs_erosion_rate-method.pdf")
 display(h)
+
+## -- Area-weighted averages
+
+t = earth.Area_km2 .> 0
+area_weighted_glacial = nanmean(earth.Erosion_rate_mm_yr[t], earth.Area_km2[t])
+
+## ---
+t = ngearth.Area_km2 .> 0
+area_weighted_nonglacial = nanmean(ngearth.Erosion_rate_mm_yr[t], ngearth.Area_km2[t])
