@@ -380,6 +380,69 @@ h = plot(hg, hng,
 savefig(h, "timescale_vs_erosion_rate-area.pdf")
 display(h)
 
+
+## --- Plot all data by method
+method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric", "Relief", )
+
+hm = plot(layout = (1,length(method)),
+    framestyle=:box,
+    xlabel="Timescale [yr]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    size=(300*length(method),300),
+    xlims = (10^-3, 10^8),
+    xticks = 10.0.^(-3:1:8),
+    ylims = (10^-5.5, 10^5.5),
+    yticks = 10.0.^(-5:1:5),
+    legend=:none,
+)
+
+# Add cosmogenic line of constant 600mm thickness
+x = collect(xlims(hm[1]))
+for j in 1:2
+    plot!(hm[j], x, 600.0./x, color=:red, label="", linestyle=:dash)
+    xl = minimum(x)
+    annotate!(hm[j], xl*10, 600/(xl*10), text("600 mm", 10, :bottom, :left, color=:red, rotation=-45.0))
+end
+
+plot!(hm[3], x, 2e6./x, color=:blue, label="", linestyle=:dash)
+plot!(hm[5], x, 2e6./x, color=:blue, label="", linestyle=:dash)
+
+
+for j in eachindex(method)
+    t = (ngearth.Methodology .== method[j])
+
+    tt = t .& (ngearth.Type .== "Fluvial")
+    plot!(hm[j], ngearth.Time_interval_yr[tt], ngearth.Erosion_rate_mm_yr[tt],
+        seriestype=:scatter,
+        color = parse(Color, "#dddddd"),
+        mswidth = 0,
+        label = "Fluvial",
+    )
+
+    tt = t .& (ngearth.Type .== "Subaerial")
+    plot!(hm[j], ngearth.Time_interval_yr[tt], ngearth.Erosion_rate_mm_yr[tt],
+        seriestype=:scatter,
+        color = parse(Color, "#aaaaaa"),
+        mswidth = 0,
+        label = "Subaerial",
+    )
+
+    t = (earth.Methodology .== method[j])
+    plot!(hm[j], earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
+        seriestype=:scatter,
+        color = :darkblue,
+        alpha = 0.85,
+        mswidth = 0,
+        label = "Glacial",
+        title = method[j],
+    )
+end
+
+display(hm)
+
 ## -- Area-weighted averages
 
 t = earth.Area_km2 .> 0
