@@ -224,6 +224,162 @@ end
 savefig(h, "timescale_vs_erosion_rate-method.pdf")
 display(h)
 
+## --- Timescale vs erosion rate, binned by area, wide version (glacial)
+
+hg = plot(layout = (1,4),
+    framestyle=:box,
+    xlabel="Timescale [yr]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    size=(1200,300),
+    xlims = (10^-3, 10^8),
+    xticks = 10.0.^(-3:1:8),
+    ylims = (10^-5.5, 10^5.5),
+    yticks = 10.0.^(-5:1:5),
+    legend=:none,
+)
+
+areas = (0, 0.1, 10, 1000, 10^7)
+titles = ("<0.1 km²", "0.1-10 km²", "10-1000 km²", ">1000 km²")
+
+# Add cosmogenic line of constant 600mm thickness
+x = collect(xlims(hg[1]))
+plot!(hg[1], x, 600.0./x, color=:red, label="", linestyle=:dash)
+xl = minimum(x)
+annotate!(hg[1], xl*10, 600/(xl*10), text("600 mm", 10, :bottom, :left, color=:red, rotation=-45.0))
+
+# Add log-mean line for all others
+t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) 
+logμ = 10^nanmean(log10.(earth.Erosion_rate_mm_yr[t]))
+for j in 1:length(areas)-1
+    hline!(hg[j], [logμ], color=:darkblue, label="", linestyle=:dot)
+end
+annotate!(hg[1], xl*3, logμ, text("$(round(logμ, digits=2)) mm/yr", 10, :top, :left, color=:darkblue,))
+
+
+method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric", "Relief", )
+mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric", "Relief", )
+colors = [mineralcolors[m] for m in ( "spessartine", "rhodochrosite", "corundum", "sodalite", "sapphirine", )]
+
+for j in 1:length(areas)-1
+    t = (areas[j] .< earth.Area_km2 .< areas[j+1]) .& (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+    j==1 && (t .|= .!(earth.Area_km2 .> 0.1) .& (earth.Methodology .!= "Volumetric"))
+    plot!(hg[j], title=titles[j])
+    j > 1 && plot!(hg[j], ylabel="")
+
+    for i in eachindex(method)
+        tt = t .& (earth.Methodology .== method[i])
+        plot!(hg[j], earth.Time_interval_yr[tt], earth.Erosion_rate_mm_yr[tt],
+            seriestype=:scatter,
+            color = colors[i],
+            alpha = 0.85,
+            mswidth = 0.1,
+            label = mlabel[i],
+        )
+    end
+end
+
+savefig(hg, "timescale_vs_erosion_rate-area-glacial.pdf")
+display(hg)
+
+## ---
+
+hng = plot(layout = (1,4),
+    framestyle=:box,
+    xlabel="Timescale [yr]",
+    ylabel="Erosion rate [mm/yr]",
+    xscale=:log10,
+    yscale=:log10,
+    fontfamily=:Helvetica,
+    size=(1200,300),
+    xlims = (10^-3, 10^8),
+    xticks = 10.0.^(-3:1:8),
+    ylims = (10^-5.5, 10^5.5),
+    yticks = 10.0.^(-5:1:5),
+    legend=:none,
+)
+
+areas = (0, 0.1, 10, 1000, 10^7)
+titles = ("<0.1 km²", "0.1-10 km²", "10-1000 km²", ">1000 km²")
+minsamples = 50 # Minimum number of samples for a method to plot an error bar
+
+# Add cosmogenic line of constant 600mm thickness
+x = collect(xlims(hng[1]))
+for j in 1:length(areas)-1
+    plot!(hng[j], x, 600.0./x, color=:red, label="", linestyle=:dash)
+end
+xl = minimum(x)
+annotate!(hng[1], xl*10, 600/(xl*10), text("600 mm", 10, :bottom, :left, color=:red, rotation=-45.0))
+
+# Add log-mean line for all others
+t = (ngearth.Time_interval_yr .> 0) .& (ngearth.Erosion_rate_mm_yr .>0) .& (ngearth.Type .== "Fluvial")
+logμ = 10^nanmean(log10.(ngearth.Erosion_rate_mm_yr[t]))
+for j in 1:length(areas)-1
+    hline!(hng[j], [logμ], color=parse(Color, "#666666"), label="", linestyle=:dot)
+end
+annotate!(hng[1], xl*3, logμ, text("$(round(logμ, sigdigits=2)) mm/yr", 10, :top, :left, color=parse(Color, "#666666"),))
+
+
+method = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric", "Relief", )
+mlabel = ("Cosmogenic detrital", "Cosmogenic surface", "Thermochronometric", "Volumetric", "Relief", )
+colors = [mineralcolors[m] for m in ( "spessartine", "rhodochrosite", "corundum", "sodalite", "sapphirine", )]
+
+for j in 1:length(areas)-1
+    t = (areas[j] .< ngearth.Area_km2 .< areas[j+1]) .& (ngearth.Time_interval_yr .> 0) .& (ngearth.Erosion_rate_mm_yr .>0) .& (ngearth.Type .== "Fluvial")
+    # j==1 && (t .|= .!(ngearth.Area_km2 .> 0.1))
+    plot!(hng[j], title=titles[j])
+    j > 1 && plot!(hng[j], ylabel="")
+
+    for i in eachindex(method)
+        tt = t .& (ngearth.Methodology .== method[i])
+        plot!(hng[j], ngearth.Time_interval_yr[tt], ngearth.Erosion_rate_mm_yr[tt],
+            seriestype=:scatter,
+            color = colors[i]*0.25 + parse(Color, "#ffffff")*0.75,
+            # alpha = 0.85,
+            mswidth = 0,
+            label = mlabel[i],
+        )
+    end
+end
+
+# Plot error bars, but on top
+for j in 1:length(areas)-1
+    t = (areas[j] .< ngearth.Area_km2 .< areas[j+1]) .& (ngearth.Time_interval_yr .> 0) .& (ngearth.Erosion_rate_mm_yr .>0) .& (ngearth.Type .== "Fluvial")
+    plot!(hng[j], title=titles[j])
+
+    for i in eachindex(method)
+        tt = t .& (ngearth.Methodology .== method[i])
+        if count(tt) .> minsamples
+            x = nanmean(log10.(ngearth.Time_interval_yr[tt]))
+            y = nanmean(log10.(ngearth.Erosion_rate_mm_yr[tt]))
+            y_sigma = nanstd(log10.(ngearth.Erosion_rate_mm_yr[tt]))
+
+            plot!(hng[j], [10^x], [10^y],
+                yerror = ([10^y - 10^(y-y_sigma)], [10^(y+y_sigma) - 10^y]),
+                seriestype = :scatter,
+                color = colors[i]*0.85,
+                msc = colors[i]*0.85,
+                label = "",
+            )
+        end
+    end
+end
+
+savefig(hng, "timescale_vs_erosion_rate-area-fluvial.pdf")
+display(hng)
+
+
+## --- Combined timescale vs erosion rate area
+
+h = plot(hg, hng,
+    size = (1200,600),
+    layout = (2,1),
+)
+savefig(h, "timescale_vs_erosion_rate-area.pdf")
+display(h)
+
 ## -- Area-weighted averages
 
 t = earth.Area_km2 .> 0
