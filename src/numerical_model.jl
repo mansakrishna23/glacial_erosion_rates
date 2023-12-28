@@ -58,7 +58,7 @@ hr = plot(framestyle=:box,
     ylims=10.0.^(-3.5,0.5),
     fg_color_legend=:white,
     ylabel="Rate [mm/yr]",
-    xlabel="Time [yr]",
+    xlabel="Averaging timescale [yr]",
     size=(600,375),
     legend=:none,
 )
@@ -135,31 +135,39 @@ function distmean(x::Truncated{<:Pareto})
 end
 
 # Erosion/deposition at irregular intervals, bidirectional
-function rarebrowniandistance(rng, dist, N, Nemax, T)
+function rarebrowniandistance(rng, dist, N, T)
     distance = zeros(N, length(T))
     rateconst = sqrt(pi)/sqrt(2)*distmean(dist)
+    Nₜmax = round(Int, 2*maximum(T)/distmean(dist))
+    bigenough = round(Int, 1.25*maximum(T))
 
-    hdist = zeros(Nemax+1)
-    tdist = zeros(Nemax+1)
+    hdist = zeros(Nₜmax+1)
+    tdist = zeros(Nₜmax+1)
     @inbounds for n in 1:N
+        Nₜlast = 1
         h = t = 0.
-        for j in 1:Nemax    
+        for j in 1:Nₜmax    
             h += rateconst*randn(rng) # Random height increment
             t += rand(rng, dist)  # Random time increment (hiatus duration)
-            hdist[j+1] = h
-            tdist[j+1] = t
+            Nₜlast = j+1
+            hdist[Nₜlast] = h
+            tdist[Nₜlast] = t
+            if t > bigenough
+                break
+            end
         end
+
         for i in eachindex(T)
-            t₀ = rand()*(last(tdist)-T[i])
-            jₗ = jᵤ = 0
-            for j in 1:Nemax
+            t₀ = rand(rng)*(tdist[Nₜlast]-T[i])
+            jₗ = jᵤ = 1
+            for j in 1:Nₜmax
                 if tdist[j+1] > t₀
                     jₗ = j
                     break
                 end
             end
-            for j in jₗ:Nemax
-                if tdist[j+1] > t₀+T[i]
+            for j in jₗ:Nₜmax
+                if tdist[j+1] > (t₀+T[i])
                     jᵤ = j
                     break
                 end
@@ -173,32 +181,39 @@ function rarebrowniandistance(rng, dist, N, Nemax, T)
 end
 
 # Erosion/deposition at irregular intervals, unidirectional
-function rareunidirectionaldistance(rng, dist, N, Nemax, T)
+function rareunidirectionaldistance(rng, dist, N, T)
     distance = zeros(N, length(T))
     rateconst = sqrt(pi)/sqrt(2)*distmean(dist)
+    Nₜmax = round(Int, 2*maximum(T)/distmean(dist))
+    bigenough = round(Int, 1.25*maximum(T))
 
-    hdist = zeros(Nemax+1)
-    tdist = zeros(Nemax+1)
+    hdist = zeros(Nₜmax+1)
+    tdist = zeros(Nₜmax+1)
     @inbounds for n in 1:N
+        Nₜlast = 1
         h = t = 0.
-        for j in 1:Nemax    
+        for j in 1:Nₜmax    
             h += abs(rateconst*randn(rng)) # Random height increment
             t += rand(rng, dist)  # Random time increment (hiatus duration)
-            # t += rand_pareto(rng, 0.5, 200_000)
-            hdist[j+1] = h
-            tdist[j+1] = t
+            Nₜlast = j+1
+            hdist[Nₜlast] = h
+            tdist[Nₜlast] = t
+            if t > bigenough
+                break
+            end
         end
+
         for i in eachindex(T)
-            t₀ = rand()*(last(tdist)-T[i])
-            jₗ = jᵤ = 0
-            for j in 1:Nemax
+            t₀ = rand(rng)*(tdist[Nₜlast]-T[i])
+            jₗ = jᵤ = 1
+            for j in 1:Nₜmax
                 if tdist[j+1] > t₀
                     jₗ = j
                     break
                 end
             end
-            for j in jₗ:Nemax
-                if tdist[j+1] > t₀+T[i]
+            for j in jₗ:Nₜmax
+                if tdist[j+1] > (t₀+T[i])
                     jᵤ = j
                     break
                 end
@@ -217,17 +232,16 @@ alpha = 0.5 # Pareto shape parameter [unitless]
 upper = 200_000 # Upper bound [years]
 dist = truncated(Pareto(0.5); upper)
 
-rng = MersenneTwister(0x12345)
+rng = MersenneTwister(0x123456)
 N = 10_000
 Nplot = 500
-Nemax = 2^18
 T = (10).^(0:0.5:8)
 
 hp = plot(framestyle=:box,
     fontfamily=:Helvetica,
     xscale=:log10,
     yscale=:log10,
-    xlabel="Time [yr]",
+    xlabel="Averaging timescale [yr]",
     ylabel="Rate [mm/yr]",
     xticks=10.0.^(0:8),
     xlims=10.0.^(0,8),
@@ -238,7 +252,7 @@ hp = plot(framestyle=:box,
     fg_color_legend=:white,
 )
 
-@time distance = rarebrowniandistance(rng, dist, N, Nemax, T)
+@time distance = rarebrowniandistance(rng, dist, N, T)
 lightpurple = 0.4*lines[4]+0.6*parse(Color, "#ffffff")
 
 # Excluding zero rates
@@ -253,7 +267,7 @@ plot!(hp, T, abs.(distance[1:Nplot,:]')./T,
 )
 μₕ = nanmean(abs.(distance), dim=1)./T
 plot!(hp, T, μₕ, 
-    label="Excluding hiata", 
+    label="Excluding nonevent intervals", 
     color=lightpurple,
     seriestype=:scatter,
     markersize=5,
@@ -271,7 +285,7 @@ plot!(hp, T, μₕ,
 map!(x->isnan(x) ? 0 : x, distance, distance)
 μₐ = nanmean(abs.(distance), dim=1)./T
 plot!(hp, T, μₐ, 
-    label="Including hiata", 
+    label="Including nonevent intervals", 
     color=lines[4],
     seriestype=:scatter,
     markersize=5,
@@ -288,10 +302,9 @@ annotate!(hp, 10.0^6.75, 2*10.0.^(a .+ b*6.75), ("Bidirectional: slope $(round(b
 
 display(hp)
 
-
 # --- Run and plot erosion/deposition as a rare event (Pareto-distributed), unidirectional
 
-@time distance = rareunidirectionaldistance(rng, dist, N, Nemax, T)
+@time distance = rareunidirectionaldistance(rng, dist, N, T)
 lightblue = 0.4*lines[8]+0.6*parse(Color, "#ffffff")
 
 # Excluding zero rates
@@ -307,24 +320,24 @@ plot!(hp, T, rates,
 )
 μₕ = nanmean(distance, dim=1)./T
 plot!(hp, T, μₕ, 
-    label="Excluding hiata", 
+    label="Excluding nonevent intervals", 
     color=lightblue,
     seriestype=:scatter,
     markersize=5,
     mswidth=0,
 )
 
-# Fit annotated line to unidirectional process excluding hiata at short timescales 
-# t = 10 .< T .< upper/10
+# # Fit annotated line to unidirectional process excluding hiata at short timescales 
+# t = 10 .< T .< 100_000
 # x, y = log10.(T[t]), log10.(μₕ[t])
 # a, b = linreg(x, y)
-# plot!(10.0.^x, 10.0.^(a .+ b*x), color=lines[1], label="", linestyle=:dash)
-# annotate!(10.0^x[2], 1.25*10.0.^(a .+ b*x[2]), ("Slope: $(round(b, digits=2))", 9, atan(b)*180/pi, :left, :bottom, lines[1]))
+# plot!(10.0.^x, 10.0.^(a .+ b*x), color=lightblue, label="", linestyle=:dot)
+# annotate!(10.0^mean(x), 1.75*10.0.^(a .+ b*mean(x)), ("slope: $(round(b, digits=2))", 9, atan(b)*180/pi, :center, :bottom, lightblue))
 
 # All rates
 map!(x->isnan(x) ? 0 : x, distance, distance)
 plot!(hp, T, nanmean(distance, dim=1)./T, 
-    label="Including hiata", 
+    label="Including nonevent intervals", 
     color=lines[8],
     seriestype=:scatter,
     markersize=5,
@@ -345,7 +358,56 @@ savefig(hp, "pareto_process.pdf")
 display(hp)
 
 
-## ---
+## --- Plot fraction of intervals with an event
+
+hc = plot(
+    framestyle=:box,
+    xlabel="Averaging timescale [yr]",
+    ylabel="Count",
+    xticks=0:8,
+    xlims=(0,8),
+    yticks=[0, N/2, N],
+    size=(600,200),
+    legend=:topleft,
+    fg_color_legend=:white,
+)
+
+nodata = vec(sum(x->x==0, distance, dims=1))
+hasdata = N .- nodata
+
+plot!(hc, log10.(T), fill(N, length(T)),
+    seriestype=:bar,
+    color=:black,
+    bar_width=0.25,
+    linewidth=0,
+    label="No event in interval",
+)
+
+plot!(hc, log10.(T), hasdata,
+    seriestype=:bar,
+    color=lines[1],
+    bar_width=0.25,
+    linewidth=0,
+    label="Event(s) in interval",
+)
+
+# Illustrate the range of timescales larger than the maximum hiatus duration of the Pareto distribution 
+xl = xlims(hc)
+plot!(hc, [log10(upper), maximum(xl)], [N, N], fillto=[0.,0.], alpha=0.15, color=lines[1], label="")
+vline!(hc, [log10(upper)], color=lines[1], linestyle=:dot, label="")
+xlims!(hc, xl)
+
+savefig(hc, "fraction_event.pdf")
+display(hc)
+
 
 ## ---
 
+h = plot(hr, hp, hc,
+    layout=grid(3,1, heights=[0.4, 0.45, 0.15,]),
+    size=(600,1000)
+)
+savefig(h, "numerical_model.pdf")
+display(h)
+
+## ----
