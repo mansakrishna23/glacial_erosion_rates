@@ -1,6 +1,16 @@
 ## --- Load packages
 using Plots, Random, Distributions, StatGeochem
 
+# Some colors we'll want later
+lightpurple = 0.4*lines[4]+0.6*parse(Color, "#ffffff")
+lightblue = 0.4*lines[8]+0.6*parse(Color, "#ffffff")
+
+# Number of simulations to run
+N = 100_000
+
+# Number of example simulations to plot as small dots
+Nplot = 500
+
 ## --- Regular process: Brownian motion as a model for sediment accumulation/erosion
 
 # Erosion/deposition once a year, bidirectional
@@ -43,9 +53,7 @@ end
 
 ## -- Run and plot erosion/deposition as a regular event
 
-rng = MersenneTwister(0x12345)
-N = 10_000
-Nplot = 500
+rng = MersenneTwister(0x1234)
 T = 10.0.^(0:0.5:6)
 
 hr = plot(framestyle=:box,
@@ -61,6 +69,7 @@ hr = plot(framestyle=:box,
     xlabel="Averaging timescale [yr]",
     size=(600,375),
     legend=:none,
+    title="Regular events",
 )
 
 @time bdistance = browniandistance(rng, N, T)
@@ -70,21 +79,19 @@ rates = bdistance[1:Nplot, :]'./T
 map!(x->x<=0 ? NaN : x, rates, rates)
 plot!(T, rates, 
     label="",
-    color=lines[4],
+    color=lightpurple,
     seriestype=:scatter,
     markersize=1,
     mswidth=0,
-    alpha=0.1,
 )
 
 rates = unidistance[1:Nplot, :]'./T
 plot!(T, rates, 
     label="",
-    color=lines[8],
+    color=lightblue,
     seriestype=:scatter,
     markersize=1,
     mswidth=0,
-    alpha=0.1,
 )
 
 plot!(T, nanmean(abs.(bdistance), dim=1)./T,
@@ -232,9 +239,7 @@ alpha = 0.5 # Pareto shape parameter [unitless]
 upper = 200_000 # Upper bound [years]
 dist = truncated(Pareto(0.5); upper)
 
-rng = MersenneTwister(0x123456)
-N = 10_000
-Nplot = 500
+rng = MersenneTwister(0x1234)
 T = (10).^(0:0.5:8)
 
 hp = plot(framestyle=:box,
@@ -250,24 +255,23 @@ hp = plot(framestyle=:box,
     size=(600, 420),
     legend=:bottomleft,
     fg_color_legend=:white,
+    title="Rare events",
 )
 
 @time distance = rarebrowniandistance(rng, dist, N, T)
-lightpurple = 0.4*lines[4]+0.6*parse(Color, "#ffffff")
 
 # Excluding zero rates
 map!(x->x==0 ? NaN : x, distance, distance)
 plot!(hp, T, abs.(distance[1:Nplot,:]')./T, 
     label="", 
-    color=lines[4],
+    color=lightpurple,
     seriestype=:scatter,
     markersize=1,
     mswidth=0,
-    alpha=0.1,
 )
 μₕ = nanmean(abs.(distance), dim=1)./T
 plot!(hp, T, μₕ, 
-    label="Excluding nonevent intervals", 
+    label="Eventful intervals", 
     color=lightpurple,
     seriestype=:scatter,
     markersize=5,
@@ -285,7 +289,7 @@ plot!(hp, T, μₕ,
 map!(x->isnan(x) ? 0 : x, distance, distance)
 μₐ = nanmean(abs.(distance), dim=1)./T
 plot!(hp, T, μₐ, 
-    label="Including nonevent intervals", 
+    label="All intervals", 
     color=lines[4],
     seriestype=:scatter,
     markersize=5,
@@ -305,22 +309,20 @@ display(hp)
 # --- Run and plot erosion/deposition as a rare event (Pareto-distributed), unidirectional
 
 @time distance = rareunidirectionaldistance(rng, dist, N, T)
-lightblue = 0.4*lines[8]+0.6*parse(Color, "#ffffff")
 
 # Excluding zero rates
 map!(x->x==0 ? NaN : x, distance, distance)
 rates = distance[1:Nplot,:]'./T
 plot!(hp, T, rates, 
     label="", 
-    color=lines[8],
+    color=lightblue,
     seriestype=:scatter,
     markersize=1,
     mswidth=0,
-    alpha=0.1,
 )
 μₕ = nanmean(distance, dim=1)./T
 plot!(hp, T, μₕ, 
-    label="Excluding nonevent intervals", 
+    label="Eventful intervals", 
     color=lightblue,
     seriestype=:scatter,
     markersize=5,
@@ -337,7 +339,7 @@ plot!(hp, T, μₕ,
 # All rates
 map!(x->isnan(x) ? 0 : x, distance, distance)
 plot!(hp, T, nanmean(distance, dim=1)./T, 
-    label="Including nonevent intervals", 
+    label="All intervals", 
     color=lines[8],
     seriestype=:scatter,
     markersize=5,
@@ -363,10 +365,9 @@ display(hp)
 hc = plot(
     framestyle=:box,
     xlabel="Averaging timescale [yr]",
-    ylabel="Count",
+    ylabel="Percent of intervals",
     xticks=0:8,
     xlims=(0,8),
-    yticks=[0, N/2, N],
     size=(600,200),
     legend=:topleft,
     fg_color_legend=:white,
@@ -375,7 +376,7 @@ hc = plot(
 nodata = vec(sum(x->x==0, distance, dims=1))
 hasdata = N .- nodata
 
-plot!(hc, log10.(T), fill(N, length(T)),
+plot!(hc, log10.(T), fill(100., length(T)),
     seriestype=:bar,
     color=:black,
     bar_width=0.25,
@@ -383,9 +384,9 @@ plot!(hc, log10.(T), fill(N, length(T)),
     label="No event in interval",
 )
 
-plot!(hc, log10.(T), hasdata,
+plot!(hc, log10.(T), hasdata/N*100,
     seriestype=:bar,
-    color=lines[1],
+    color=0.5*lines[8]+0.5*lines[1],
     bar_width=0.25,
     linewidth=0,
     label="Event(s) in interval",
@@ -393,7 +394,7 @@ plot!(hc, log10.(T), hasdata,
 
 # Illustrate the range of timescales larger than the maximum hiatus duration of the Pareto distribution 
 xl = xlims(hc)
-plot!(hc, [log10(upper), maximum(xl)], [N, N], fillto=[0.,0.], alpha=0.15, color=lines[1], label="")
+plot!(hc, [log10(upper), maximum(xl)], [100, 100], fillto=[0.,0.], alpha=0.15, color=lines[1], label="")
 vline!(hc, [log10(upper)], color=lines[1], linestyle=:dot, label="")
 xlims!(hc, xl)
 
