@@ -1,12 +1,10 @@
 ## --- Load packages
 using Plots, Random, Distributions, StatGeochem
+using ProgressMeter: @showprogress
 
 # Some colors we'll want later
 lightpurple = 0.4*lines[4]+0.6*parse(Color, "#ffffff")
 lightblue = 0.4*lines[8]+0.6*parse(Color, "#ffffff")
-
-# Number of simulations to run
-N = 100_000
 
 # Number of example simulations to plot as small dots
 Nplot = 500
@@ -19,8 +17,8 @@ function browniandistance(rng, N, T)
     distance = zeros(N, length(T))
     rate = sqrt(pi)/sqrt(2)
 
-    @inbounds for i in eachindex(T)
-        for n in 1:N
+    @inbounds @showprogress for n in 1:N
+        for i in eachindex(T)
             h = 0.
             for t in 1:T[i]
                 r = rate*randn(rng)
@@ -38,8 +36,8 @@ function unidirectionaldistance(rng, N, T)
     distance = zeros(N, length(T))
     rate = sqrt(pi)/sqrt(2)
 
-    @inbounds for i in eachindex(T)
-        for n in 1:N
+    @inbounds @showprogress for n in 1:N
+        for i in eachindex(T)
             h = 0.
             for t in 1:T[i]
                 r = rate*abs(randn(rng))
@@ -53,17 +51,21 @@ end
 
 ## -- Run and plot erosion/deposition as a regular event
 
+# Number of simulations to run
+N = 10_000
+# Initialize PRNG
 rng = MersenneTwister(0x1234)
-T = 10.0.^(0:0.5:6)
+# Set of time steps to run
+T = 10.0.^(0:0.5:7.5)
 
 hr = plot(framestyle=:box,
     fontfamily=:Helvetica,
     xscale=:log10, 
     yscale=:log10,
-    xticks=10.0.^(0:6),
-    xlims=10.0.^(0,6),
-    yticks=10.0.^(-4:1),
-    ylims=10.0.^(-3.5,0.5),
+    xticks=10.0.^(0:8),
+    xlims=10.0.^(0,8.01),
+    yticks=10.0.^(-5:1),
+    ylims=10.0.^(-4.5,0.5),
     fg_color_legend=:white,
     ylabel="Rate [mm/yr]",
     xlabel="Averaging timescale [yr]",
@@ -113,10 +115,10 @@ plot!(T, nanmean(unidistance, dim=1)./T,
 # Plot and annotate ideal constant rate line for unidirectional process
 x = range(log10.(xlims())..., step=0.5)
 plot!(10.0.^x, ones(size(x)), color=lines[8],  label="")
-annotate!(10.0^3, 1.5*1, ("Unidirectional process: slope 0", 9, 0.0, :center, :bottom, lines[8]), fontfamily=:Helvetica)
+annotate!(10.0^4, 1.5*1, ("Unidirectional process: slope 0", 9, 0.0, :center, :bottom, lines[8]), fontfamily=:Helvetica)
 # Plot and annotate ideal sqrt(t)/t rate line for bidirectional process
 plot!(10.0.^x, 10.0.^(-0.5x), color=lines[4], label="", linestyle=:dash)
-annotate!(10.0^3, 1.5*10.0.^(0 - 0.5*3), ("Bidirectional (Brownian) process: slope -0.5", 9, -45.0/2, :center, :bottom, lines[4]), fontfamily=:Helvetica)
+annotate!(10.0^4, 1.5*10.0.^(0 - 0.5*4), ("Bidirectional (Brownian) process: slope -0.5", 9, -45.0/2, :center, :bottom, lines[4]), fontfamily=:Helvetica)
 
 savefig(hr, "regular_process.pdf")
 display(hr)
@@ -150,7 +152,7 @@ function rarebrowniandistance(rng, dist, N, T)
 
     hdist = zeros(Nₜmax+1)
     tdist = zeros(Nₜmax+1)
-    @inbounds for n in 1:N
+    @inbounds @showprogress for n in 1:N
         Nₜlast = 1
         h = t = 0.
         for j in 1:Nₜmax    
@@ -196,7 +198,7 @@ function rareunidirectionaldistance(rng, dist, N, T)
 
     hdist = zeros(Nₜmax+1)
     tdist = zeros(Nₜmax+1)
-    @inbounds for n in 1:N
+    @inbounds @showprogress for n in 1:N
         Nₜlast = 1
         h = t = 0.
         for j in 1:Nₜmax    
@@ -235,12 +237,19 @@ end
 
 ## --- Run and plot erosion/deposition as a rare event (Pareto-distributed), bidirectional
 
+# Number of simulations to run
+N = 100_000
+
+# Rare event distribution to draw times from
 alpha = 0.5 # Pareto shape parameter [unitless]
 upper = 200_000 # Upper bound [years]
 dist = truncated(Pareto(0.5); upper)
 
+# Initialize PRNG
 rng = MersenneTwister(0x1234)
-T = (10).^(0:0.5:8)
+# Set of time steps to run
+T = 10.0.^(0:0.5:8)
+
 
 hp = plot(framestyle=:box,
     fontfamily=:Helvetica,
@@ -249,7 +258,7 @@ hp = plot(framestyle=:box,
     xlabel="Averaging timescale [yr]",
     ylabel="Rate [mm/yr]",
     xticks=10.0.^(0:8),
-    xlims=10.0.^(0,8),
+    xlims=10.0.^(0,8.01),
     yticks=10.0.^(-3:3),
     ylims=10.0.^(-3,3),
     size=(600, 420),
@@ -367,7 +376,7 @@ hc = plot(
     xlabel="Averaging timescale [yr]",
     ylabel="Percent of intervals",
     xticks=0:8,
-    xlims=(0,8),
+    xlims=(0,8.01),
     size=(600,200),
     legend=:topleft,
     fg_color_legend=:white,
@@ -402,7 +411,7 @@ savefig(hc, "fraction_event.pdf")
 display(hc)
 
 
-## ---
+## --- Plot all together
 
 h = plot(hr, hp, hc,
     layout=grid(3,1, heights=[0.4, 0.45, 0.15,]),
