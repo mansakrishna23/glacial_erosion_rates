@@ -449,7 +449,7 @@ hng = plot(layout = (1,3),
 
 areas = (0, 0.1, 100, 10^7)
 titles = ("<0.1 km²", "0.1-100 km²", ">100 km²")
-minsamples = 50 # Minimum number of samples for a method to plot an error bar
+minsamples = 5 # Minimum number of samples for a method to plot an error bar
 
 # Add cosmogenic line of constant 600mm thickness
 x = collect(xlims(hng[1]))
@@ -482,7 +482,7 @@ for j in 1:length(areas)-1
         tt = t .& (ngearth.Methodology .== method[i])
         plot!(hng[j], ngearth.Time_interval_yr[tt], ngearth.Erosion_rate_mm_yr[tt],
             seriestype=:scatter,
-            color = colors[i]*0.25 + parse(Color, "#ffffff")*0.75,
+            color = colors[i]*0.5 + parse(Color, "#ffffff")*0.5,
             # alpha = 0.85,
             mswidth = 0,
             label = mlabel[i],
@@ -505,8 +505,8 @@ for j in 1:length(areas)-1
             plot!(hng[j], [10^x], [10^y],
                 yerror = ([10^y - 10^(y-y_sigma)], [10^(y+y_sigma) - 10^y]),
                 seriestype = :scatter,
-                color = colors[i]*0.85,
-                msc = colors[i]*0.85,
+                color = colors[i]*0.55,
+                msc = colors[i]*0.55,
                 label = "",
             )
         end
@@ -561,7 +561,7 @@ for j in 1:2
     tt = t .& (ngearth.Type .== "Fluvial")
     plot!(hm[1], ngearth.Time_interval_yr[tt], ngearth.Erosion_rate_mm_yr[tt],
         seriestype=:scatter,
-        color = colors[j],
+        color = colors[j]*0.5 + parse(Color, "#ffffff")*0.5,
         mswidth = 0,
         label = "",
     )
@@ -569,7 +569,7 @@ for j in 1:2
     tt = t .& (ngearth.Type .== "Subaerial")
     plot!(hm[1], ngearth.Time_interval_yr[tt], ngearth.Erosion_rate_mm_yr[tt],
         seriestype=:scatter,
-        color = colors[j],
+        color = colors[j]*0.5 + parse(Color, "#ffffff")*0.5,
         mswidth = 0,
         label = "",
     )
@@ -590,7 +590,7 @@ for j in 3:5
     tt = t .& (ngearth.Type .== "Fluvial")
     plot!(hm[2], ngearth.Time_interval_yr[tt], ngearth.Erosion_rate_mm_yr[tt],
         seriestype=:scatter,
-        color = colors[j],
+        color = colors[j]*0.5 + parse(Color, "#ffffff")*0.5,
         mswidth = 0,
         label = "",
     )
@@ -598,7 +598,7 @@ for j in 3:5
     tt = t .& (ngearth.Type .== "Subaerial")
     plot!(hm[2], ngearth.Time_interval_yr[tt], ngearth.Erosion_rate_mm_yr[tt],
         seriestype=:scatter,
-        color = colors[j],
+        color = colors[j]*0.5 + parse(Color, "#ffffff")*0.5,
         mswidth = 0,
         label = "",
     )
@@ -822,17 +822,19 @@ display(h)
 
 
 ## --- Histogram of erosion rates... on Mars!
+## --- Histogram of erosion rates!
 
 # Pick binning scheme
 t = (ngmars.Time_interval_yr .> 0) .& (ngmars.Erosion_rate_mm_yr .>0)
 μ = nanmean(log10.(ngmars.Erosion_rate_mm_yr[t]))
-binedges = (-6:0.2:6) .+ μ
+binedges = (-6:0.4:6) .+ μ
 bincenters = cntr(binedges)
 distx = first(binedges):0.01:last(binedges)
 
+
 hist = plot(framestyle=:box,
     xlabel="Erosion Rate [mm/yr]",
-    ylabel="N (nonglacial)",
+    ylabel="N (subaerial)",
     xflip=true,
     xlims=(10^-8,10^3),
     xticks=10.0.^(-8:3),
@@ -845,31 +847,30 @@ hist = plot(framestyle=:box,
     fontfamily=:Helvetica,
 )
 
-# Nonglacial erosion
-tng = (ngmars.Time_interval_yr .> 0) .& (ngmars.Erosion_rate_mm_yr .> 0)
-logerosion = log10.(ngmars.Erosion_rate_mm_yr[tng])
+
+# Subaerial erosion
+ts = (ngmars.Time_interval_yr .> 0) .& (ngmars.Erosion_rate_mm_yr .> 0) .& ((ngmars.Type .== "Subaerial") .| (ngmars.Type .== "Aeolian"))
+logerosion = log10.(ngmars.Erosion_rate_mm_yr[ts])
 Ns = histcounts(logerosion, binedges, T=Float64)
 plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns),
     fill=true,
-    color=parse(Color, "#d8cad4"),
+    color=parse(Color, "#aaaaaa"),
     label=""
 )
 
-ngμ, ngσ = nanmean(logerosion), nanstd(logerosion)
-plot!(hist, 10.0.^distx, normpdf(ngμ,ngσ,distx) .* (sum(Ns) * step(binedges)),
+sμ, sσ = nanmean(logerosion), nanstd(logerosion)
+plot!(hist, 10.0.^distx, normpdf(sμ,sσ,distx) .* (sum(Ns) * step(binedges)),
     linestyle=:solid,
-    color=parse(Color, "#764a54"),
+    color=parse(Color, "#555555"),
     label="",
 )
 
-# Glacial erosion
-t = (mars.Time_interval_yr .> 0) .& (mars.Erosion_rate_mm_yr .>0)
-logerosion = log10.(mars.Erosion_rate_mm_yr[t])
-Ns = histcounts(logerosion, binedges)
+
+# Second axis
 hist2 = twinx()
 plot!(hist2,
     framestyle=:box,
-    ylabel="N (glacial)",
+    ylabel="N (glacial, fluvial)",
     xflip=true,
     xlims=(10^-8,10^3),
     xticks=10.0.^(-8:3),
@@ -878,29 +879,60 @@ plot!(hist2,
     rotation=90.,
 )
 
+
+# Fluvial erosion
+tf = (ngmars.Time_interval_yr .> 0) .& (ngmars.Erosion_rate_mm_yr .> 0) .& (ngmars.Type .== "Fluvial")  
+logerosion = log10.(ngmars.Erosion_rate_mm_yr[tf])
+Ns = histcounts(logerosion, binedges, T=Float64)
+plot!(hist2, 10.0.^stepifyedges(binedges), stepify(Ns),
+    fill=true,
+    color=parse(Color, "#d8cad4"),
+    label=""
+)
+
+fμ, fσ = nanmean(logerosion), nanstd(logerosion)
+plot!(hist2, 10.0.^distx, normpdf(fμ,fσ,distx) .* (sum(Ns) * step(binedges)),
+    linestyle=:solid,
+    color=parse(Color, "#764a54"),
+    label="",
+)
+
+
+# Glacial erosion
+tg = (mars.Time_interval_yr .> 0) .& (mars.Erosion_rate_mm_yr .> 0)
+logerosion = log10.(mars.Erosion_rate_mm_yr[tg])
+Ns = histcounts(log10.(mars.Erosion_rate_mm_yr[tg]), binedges)
 plot!(hist2, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=mineralcolors["rhodochrosite"], label="")
 
-μ, σ = nanmean(logerosion), nanstd(logerosion)
-plot!(hist2, 10.0.^distx, normpdf(μ,σ,distx) .* (sum(Ns)*step(binedges)),
+μg, σg = nanmean(logerosion), nanstd(logerosion)
+plot!(hist2, 10.0.^distx, normpdf(μg,σg,distx) .* (sum(Ns)*step(binedges)),
     linestyle=:solid,
     color=:darkred,
     label="",
 )
 
+
 # Clean up y axis limits
-ylims!(hist, 0, 10)
-ylims!(hist2, 0, 4)
+ylims!(hist, 0, 15)
+ylims!(hist2, 0, 8)
 
 
 # Glacial Gaussian
-annotate!(hist2, [10.0.^μ], [0], text(" $(round(10^(μ+3), digits=2))e-3 mm/yr", 7, :left, :bottom, rotation=90, color=:darkred))
-vline!(hist2, [10.0.^μ], color=:darkred, linestyle=:dot, label="")
-annotate!(hist2, [10^μ], [maximum(ylims(hist2))], text("glacial ", 7, :right, :bottom, rotation=90, color=:darkred))
+annotate!(hist2, [10.0.^μg], [0], text(" $(round(10^μg, sigdigits=2)) mm/yr", 7, :left, :bottom, rotation=90, color=:darkred))
+vline!(hist2, [10.0.^μg], color=:darkred, linestyle=:dot, label="")
+annotate!(hist2, [10^μg], [maximum(ylims(hist2))], text("glacial ", 7, :right, :bottom, rotation=90, color=:darkred))
 
-# Nonglacial Gaussian
-annotate!(hist2, [10.0.^ngμ], [0], text(" $(round(10^(ngμ+3), digits=2))e-3 mm/yr", 7, :left, :bottom, rotation=90, color=parse(Color, "#764a54")))
-vline!(hist2, [10.0.^ngμ], color=parse(Color, "#764a54"), linestyle=:dot, label="")
-annotate!(hist2, [10.0.^ngμ], [maximum(ylims(hist2))], text("nonglacial ", 7, :right, :bottom, rotation=90, color=parse(Color, "#764a54")))
+# Subaerial Gaussian
+annotate!(hist2, [10.0.^sμ], [0], text(" $(round(10^sμ, sigdigits=2)) mm/yr", 7, :left, :bottom, rotation=90, color=parse(Color, "#333333")))
+vline!(hist2, [10.0.^sμ], color=parse(Color, "#555555"), linestyle=:dot, label="")
+annotate!(hist2, [10.0.^sμ], [maximum(ylims(hist2))], text("subaerial ", 7, :right, :bottom, rotation=90, color=parse(Color, "#333333")))
+
+
+# Fluvial Gaussian
+annotate!(hist2, [10.0.^fμ], [0], text(" $(round(10^fμ, sigdigits=2)) mm/yr", 7, :left, :bottom, rotation=90, color=parse(Color, "#666666")))
+vline!(hist2, [10.0.^fμ], color=parse(Color, "#888888"), linestyle=:dot, label="")
+annotate!(hist2, [10.0.^fμ], [maximum(ylims(hist2))], text("fluvial ", 7, :right, :bottom, rotation=90, color=parse(Color, "#666666")))
+
 
 savefig(hist, "Mars_erosion_rate_histogram.pdf")
 display(hist)
