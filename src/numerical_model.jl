@@ -420,4 +420,49 @@ h = plot(hr, hp, hc,
 savefig(h, "numerical_model.pdf")
 display(h)
 
-## ----
+
+## --- Plot example timeseries for regular event process
+
+N = 100
+hdist = randn(N)*sqrt(pi/2)
+tdist = 1:N
+
+h = plot(vec([tdist tdist tdist]'), vec([zeros(size(hdist)) abs.(hdist) zeros(size(hdist))]'), 
+    color=lines[8], 
+    lw=2,
+    label="",
+    # xticks=:none,
+    # yticks=:none,
+    # xlabel="Time [yr]",
+    # ylabel="Erosion [mm]",
+    # xlims=extrema(tdist),
+    framestyle=:none,
+    size=(600,100),
+)
+
+savefig(h, "regular_process_example.pdf")
+display(h)
+
+## --- Plot example timeseries for rare event process
+
+N = 100
+hdist = randn(N)*sqrt(pi/2)
+tdist = cumsum(rand(truncated(Pareto(0.5), upper=200_000), N))
+
+h = plot(vec([tdist tdist tdist]'), vec([zeros(size(hdist)) abs.(hdist) zeros(size(hdist))]'), 
+    color=lines[8], 
+    lw=2,
+    label="",
+    # xticks=:none,
+    # yticks=:none,
+    # xlabel="Time [yr]",
+    # ylabel="Erosion [mm]",
+    # xlims=extrema(tdist),
+    framestyle=:none,
+    size=(600,100),
+)
+
+savefig(h, "pareto_process_example.pdf")
+display(h)
+
+## --- End of File
