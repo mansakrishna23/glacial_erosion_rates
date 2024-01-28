@@ -251,6 +251,68 @@ display(h)
 
 ## --- Histogram of erosion rates!
 
+
+# Pick binning scheme
+tg = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+μg = nanmean(log10.(earth.Erosion_rate_mm_yr[tg]))
+binedges = (-6:0.2:4) .+ μg
+bincenters = cntr(binedges)
+distx = first(binedges):0.01:last(binedges)
+
+hist = plot(framestyle=:box,
+    xlabel="Erosion Rate [mm/yr]",
+    ylabel="N",
+    xflip=true,
+    xlims=(10^-5,10^3),
+    xticks=10.0.^(-5:3),
+    xscale=:log10,
+    size=(600,250),
+    rotation=90.,
+    xguidefontrotation=180.,
+    fontfamily=:Helvetica,
+    legend=:none,
+)
+ylims!(0, 28)
+
+
+type = ( "Alpine", "Alpine tidewater", "High-latitude", "Continental", )
+tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", )
+colors = [mineralcolors[m] for m in ("zircon", "malachite", "azurite", "quartz", )]
+
+for i in (4, 3, 1, 2)
+
+    # Histogram
+    tg = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
+    tg .&= (earth.Type .== type[i]) 
+    logerosion = log10.(earth.Erosion_rate_mm_yr[tg])
+    Ns = histcounts(log10.(earth.Erosion_rate_mm_yr[tg]), binedges)
+    plot!(hist, 10.0.^stepifyedges(binedges), stepify(Ns), 
+        fill=true, 
+        color=colors[i],
+        label=tlabel[i],
+        alpha=0.85,
+    )
+
+    μg, σg = nanmean(logerosion), nanstd(logerosion)
+    plot!(hist, 10.0.^distx, normpdf(μg,σg,distx) .* (sum(Ns)*step(binedges)),
+        linestyle=:solid,
+        color=colors[i]*0.85,
+        label="",
+    )
+
+    # Gaussian
+    annotate!(hist, [10.0.^μg], [0], text(" $(round(10^μg, sigdigits=2)) mm/yr", 7, :left, :bottom, rotation=90, color=colors[i]*0.3))
+    vline!(hist, [10.0.^μg], color=colors[i]*0.4, linestyle=:dot, label="")
+    annotate!(hist, [10^μg], [maximum(ylims(hist))], text("$(tlabel[i]) ", 7, :right, :bottom, rotation=90, color=colors[i]*0.3))
+
+end
+
+
+savefig(hist, "erosion_rate_histogram_types.pdf")
+display(hist)
+
+## --- histogram of erosion rates vs nonglacial!
+
 # Pick binning scheme
 tg = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
 μg = nanmean(log10.(earth.Erosion_rate_mm_yr[tg]))
