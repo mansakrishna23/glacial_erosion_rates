@@ -249,8 +249,7 @@ savefig(h, "timescale_vs_erosion_rate-type.pdf")
 display(h)
 
 
-## --- Histogram of erosion rates!
-
+## --- Histogram of erosion rates for each glacier type
 
 # Pick binning scheme
 tg = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
@@ -271,6 +270,7 @@ hist = plot(framestyle=:box,
     xguidefontrotation=180.,
     fontfamily=:Helvetica,
     legend=:none,
+    ymirror=true,
 )
 ylims!(0, 28)
 
@@ -293,14 +293,23 @@ for i in (4, 3, 1, 2)
         alpha=0.85,
     )
 
+    # Gaussian
     μg, σg = nanmean(logerosion), nanstd(logerosion)
     plot!(hist, 10.0.^distx, normpdf(μg,σg,distx) .* (sum(Ns)*step(binedges)),
         linestyle=:solid,
         color=colors[i]*0.85,
         label="",
     )
+    # Error bars
+    semg = σg/sqrt(count(!isnan, logerosion))
+    plot!(hist, [10.0^μg,], [0.99max(ylims(hist)...)], 
+        xerror=([10.0^μg - 10.0^(μg-2semg)], [10.0^(μg+2semg)-10.0^μg]), 
+        mscolor=colors[i]*0.85,
+        color=colors[i]*0.85,
+        label="",
+    )
 
-    # Gaussian
+    # Annotations and lines
     annotate!(hist, [10.0.^μg], [0], text(" $(round(10^μg, sigdigits=2)) mm/yr", 7, :left, :bottom, rotation=90, color=colors[i]*0.3))
     vline!(hist, [10.0.^μg], color=colors[i]*0.4, linestyle=:dot, label="")
     annotate!(hist, [10^μg], [maximum(ylims(hist))], text("$(tlabel[i]) ", 7, :right, :bottom, rotation=90, color=colors[i]*0.3))
@@ -311,7 +320,8 @@ end
 savefig(hist, "erosion_rate_histogram_types.pdf")
 display(hist)
 
-## --- histogram of erosion rates vs nonglacial!
+
+## --- Histogram of glacial erosion rates vs fluvial and subaerial!
 
 # Pick binning scheme
 tg = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0)
@@ -333,6 +343,7 @@ hist = plot(framestyle=:box,
     yguidefontcolor=parse(Color, "#888888"),
     ytickfontcolor=parse(Color, "#888888"),
     fontfamily=:Helvetica,
+    ylims=(0,800),
 )
 
 # Fluvial erosion
@@ -351,6 +362,13 @@ plot!(hist, 10.0.^distx, normpdf(fμ,fσ,distx) .* (sum(Ns) * step(binedges)),
     color=parse(Color, "#888888"),
     label="",
 )
+fsem = fσ/sqrt(count(!isnan, logerosion))
+plot!(hist, [10.0^fμ,], [max(ylims(hist)...)], 
+    xerror=([10.0^fμ - 10.0^(fμ-2fsem)], [10.0^(fμ+2fsem)-10.0^fμ]),  
+    mscolor=parse(Color, "#888888"),
+    color=parse(Color, "#888888"),
+    label="",
+)
 
 # Second axis
 hist2 = twinx()
@@ -363,6 +381,7 @@ plot!(hist2,
     xscale=:log10,
     size=(400,200),
     rotation=90.,
+    ylims=(0,70)
 )
 
 # Subaerial erosion
@@ -381,22 +400,32 @@ plot!(hist2, 10.0.^distx, normpdf(sμ,sσ,distx) .* (sum(Ns) * step(binedges)),
     color=parse(Color, "#555555"),
     label="",
 )
+ssem = sσ/sqrt(count(!isnan, logerosion))
+plot!(hist2, [10.0^sμ,], [max(ylims(hist2)...)], 
+    xerror=([10.0^sμ - 10.0^(sμ-2ssem)], [10.0^(sμ+2ssem)-10.0^sμ]),  
+    mscolor=parse(Color, "#555555"),
+    color=parse(Color, "#555555"),
+    label="",
+)
 
 # Glacial erosion
 logerosion = log10.(earth.Erosion_rate_mm_yr[tg])
 Ns = histcounts(log10.(earth.Erosion_rate_mm_yr[tg]), binedges)
 plot!(hist2, 10.0.^stepifyedges(binedges), stepify(Ns), fill=true, color=parse(Color, "#6987C4"), label="")
 
-μg, σg = nanmean(logerosion), nanstd(logerosion)
+μg, σg, = nanmean(logerosion), nanstd(logerosion)
 plot!(hist2, 10.0.^distx, normpdf(μg,σg,distx) .* (sum(Ns)*step(binedges)),
     linestyle=:solid,
     color=:darkblue,
     label="",
 )
-
-# Clean up y axis limits
-ylims!(hist, 0, 800)
-ylims!(hist2, 0, 70)
+semg = σg/sqrt(count(!isnan, logerosion))
+plot!(hist2, [10.0^μg,], [max(ylims(hist2)...)], 
+    xerror=([10.0^μg - 10.0^(μg-2semg)], [10.0^(μg+2semg)-10.0^μg]), 
+    mscolor=:darkblue,
+    color=:darkblue,
+    label="",
+)
 
 
 # Glacial Gaussian
@@ -420,16 +449,16 @@ savefig(hist, "erosion_rate_histogram.pdf")
 display(hist)
 
 
-plot!(hist,
-    xlims=(10^-8,10^3),
-    xticks=10.0.^(-8:3),
-)
-plot!(hist2,
-    xlims=(10^-8,10^3),
-    xticks=10.0.^(-8:3),
-)
-savefig(hist, "erosion_rate_histogram_taller.pdf")
-# display(hist)
+# plot!(hist,
+#     xlims=(10^-8,10^3),
+#     xticks=10.0.^(-8:3),
+# )
+# plot!(hist2,
+#     xlims=(10^-8,10^3),
+#     xticks=10.0.^(-8:3),
+# )
+# savefig(hist, "erosion_rate_histogram_taller.pdf")
+# # display(hist)
 
 
 ## --- Timescale vs erosion rate, binned by area, wide version (glacial)
