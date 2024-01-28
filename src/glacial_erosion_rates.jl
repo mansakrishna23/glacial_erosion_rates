@@ -235,7 +235,7 @@ tlabel = ( "Alpine", "Alpine tidewater", "Non-cont. high-lat.", "Continental", "
 colors = [mineralcolors[m] for m in ("zircon", "malachite", "azurite", "quartz", "fluid", )]
 
 for i in eachindex(type)
-    t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& contains.(earth.Type, type[i])
+    t = (earth.Time_interval_yr .> 0) .& (earth.Erosion_rate_mm_yr .>0) .& (earth.Type .== type[i])
     plot!(h, earth.Time_interval_yr[t], earth.Erosion_rate_mm_yr[t],
         seriestype=:scatter,
         color = colors[i],
@@ -243,6 +243,22 @@ for i in eachindex(type)
         mswidth = 0.25,
         label = tlabel[i],
     )
+    if i < 5
+        logerosion = log10.(earth.Erosion_rate_mm_yr[t])
+        μg, σg = nanmean(logerosion), nanstd(logerosion)
+        hline!([10.0.^μg],
+            linestyle=:dash,
+            color = colors[i],
+            label=""
+        )
+        semg = σg/sqrt(count(!isnan, logerosion))
+        plot!(h, [0.98max(xlims(h)...)], [10.0^μg,], 
+            yerror=([10.0^μg - 10.0^(μg-2semg)], [10.0^(μg+2semg)-10.0^μg]), 
+            mscolor=colors[i],
+            color=colors[i],
+            label="",
+        )
+    end
 end
 
 savefig(h, "timescale_vs_erosion_rate-type.pdf")
@@ -300,6 +316,7 @@ for i in (4, 3, 1, 2)
         color=colors[i]*0.85,
         label="",
     )
+    @info "$(type[i]): $(10.0^μg) mm/yr log-mean"
     # Error bars
     semg = σg/sqrt(count(!isnan, logerosion))
     plot!(hist, [10.0^μg,], [0.99max(ylims(hist)...)], 
