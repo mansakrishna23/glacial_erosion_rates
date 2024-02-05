@@ -9,6 +9,7 @@ h = plot(framestyle=:box,
     ylims=10.0.^(-12, -4),
     yticks=10.0.^(-12:-4),
     xlims=(4,9),
+    fontfamily=:Helvetica,
 )
 
 Ksp_BeOH2 = 10^-21.16 # Lambert and Cleverly 1992, ≈ 6.92e−22
@@ -23,24 +24,24 @@ Beₐ = Ksp_BeOH2./OH.^2
 # BeOH2 saturation
 plot!(pH, Beₐ, color=:black, lw=2, label="")
 plot!(pH, Beₐ, color=:black, lw=2, fillto=1.0, alpha=0.15, label="")
-annotate!(pH[200:200],Beₐ[200:200], text("BeOH₂ saturation", 10, :left, :bottom, color=:black, rotation=-40))
+annotate!(pH[200:200],Beₐ[200:200], text("BeOH₂ saturation", 10, :left, :bottom, color=:black, rotation=-40, family=:Helvetica))
 
 # Rainwater pH
 vline!([4.77,], color=:red, linestyle=:dash, label="")
-annotate!([4.77,],[max(yl...),],text("Median rainwater ", 10, :right, :bottom, color=:red, rotation=90))
+annotate!([4.77,],[max(yl...),],text("Median rainwater ", 10, :right, :bottom, color=:red, rotation=90, family=:Helvetica))
 
 # Soil pH
 vline!([5.72,], color=:darkorange, linestyle=:dash, label="")
-annotate!([5.72,],[max(yl...),], text("Median soil ", 10, :right, :bottom, color=:darkorange, rotation=90))
+annotate!([5.72,],[max(yl...),], text("Median soil ", 10, :right, :bottom, color=:darkorange, rotation=90, family=:Helvetica))
 
 # Ocean Be
 hline!([2.33E-02*1e-9,], ribbon=(10e-12, 40e-12), fillalpha=0.15, color=:blue, label="")
-annotate!([4.1,],[2.33E-02*1e-9,],text("Seawater Be", 10, :left, :bottom, color=:darkblue, ))
+annotate!([4.1,],[2.33E-02*1e-9,],text("Seawater Be", 10, :left, :bottom, color=:darkblue, family=:Helvetica))
 # Ocean pH
 yl = ylims()
 vline!([8.2,], color=:blue, label="")
 plot!([8.2-0.14, 8.2+0.14], fill(max(yl...), 2), fillto=min(yl...), color=:blue, alpha=0.15, label="")
-annotate!([8.2,],[max(yl...),],text("Seawater pH ", 10, :right, :bottom, color=:darkblue, rotation=90))
+annotate!([8.2,],[max(yl...),],text("Seawater pH ", 10, :right, :bottom, color=:darkblue, rotation=90, family=:Helvetica))
 
 ## --- manually compiled Be
 
@@ -55,8 +56,8 @@ plot!(water.pH, water.Be_dissolved_nmol_kg.*1e-9,
 # plot!(water.pH, water.Be_colloidal_nmol_kg.*1e-9, seriestype=:scatter, label="")
 
 ## ---
-savefig("beryllium.pdf")
-
+savefig(h, "beryllium.pdf")
+display(h)
 
 ## --- Net denudation / sediment production
 
