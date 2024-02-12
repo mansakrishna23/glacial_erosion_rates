@@ -247,7 +247,7 @@ for i in eachindex(type)
         logerosion = log10.(earth.Erosion_rate_mm_yr[t])
         μg, σg = nanmean(logerosion), nanstd(logerosion)
         hline!([10.0.^μg],
-            linestyle=:dash,
+            linestyle=:dot,
             color = colors[i],
             label=""
         )
@@ -719,6 +719,11 @@ for j in 3:5
         label = method[j],
     )
 end
+
+# # Add line of constant 10km thickness
+# x = collect(xlims(hm))
+# plot!(hm[2], x, 10*1000*1000.0./x, color=:black, label="", linestyle=:dash)
+# annotate!(hm[2], 2*10^2, 10*1000*1000.0/(2*10^2), text("10 km", 9, :bottom, :left, color=:black, rotation=-45.0))
 
 savefig(hm, "timescale_vs_erosion_rate_allmethod.pdf")
 display(hm)
