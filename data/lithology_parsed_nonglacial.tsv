@@ -4872,6 +4872,9 @@ Latitude	Longitude	Hash	Lithology	Age	Age Uncert	Unparsed Lithology
 28.08059	84.81931	28.08059;84.81931	sed, 	721.9	278.0	sedimentary rocks | precambrian-phanerozoic sedimentary rocks | 
 28.06151	84.86411	28.06151;84.86411	sed, 	721.9	278.0	sedimentary rocks | precambrian-phanerozoic sedimentary rocks | 
 45.42881	6.807	45.42881;6.807	sed, 	173.15	28.0	sedimentary rocks | mesozoic sedimentary rocks | 
+-77.9	160.92	-77.9;160.92	basalt, volc, ign, 	173.15	28.0	mafic volcanic rocks | mesozoic volcanic rocks | 
+-77.54999	160.0897	-77.54999;160.0897	basalt, volc, ign, 	173.15	28.0	mafic volcanic rocks | mesozoic volcanic rocks | 
+-77.85	160.92	-77.85;160.92	basalt, volc, ign, 	173.15	28.0	mafic volcanic rocks | mesozoic volcanic rocks | 
 36.72351	-118.2922	36.72351;-118.2922	plut, ign, 	105.5	40.0	intrusive igneous rocks | mesozoic intrusive rocks | 
 36.7072	-118.28696	36.7072;-118.28696	plut, ign, 	105.5	40.0	intrusive igneous rocks | mesozoic intrusive rocks | 
 45.52829	6.78551	45.52829;6.78551	sed, 	173.15	28.0	sedimentary rocks | mesozoic sedimentary rocks | 
@@ -4888,6 +4891,7 @@ Latitude	Longitude	Hash	Lithology	Age	Age Uncert	Unparsed Lithology
 44.719	6.762	44.719;6.762	sed, 	173.15	28.0	sedimentary rocks | mesozoic sedimentary rocks | 
 44.778	6.86	44.778;6.86	sed, basalt, volc, ign, met, 	133.65	68.0	blueschist grade metasedimentary/metavolcanic schist | mesozoic crystalline metamorphic rocks | 
 40.02991	-119.98131	40.02991;-119.98131	plut, ign, 	105.5	40.0	intrusive igneous rocks | mesozoic intrusive rocks | 
+-76.98366	161.52648	-76.98366;161.52648	basalt, volc, ign, 	173.15	28.0	mafic volcanic rocks | mesozoic volcanic rocks | 
 -80.28305	-82.09793	-80.28305;-82.09793	sed, 	305.40099999999995	53.0	sedimentary rocks | paleozoic sedimentary rocks | 
 -80.2642	-82.18933	-80.2642;-82.18933	sed, 	305.40099999999995	53.0	sedimentary rocks | paleozoic sedimentary rocks | 
 -80.26735	-82.21628	-80.26735;-82.21628	sed, 	305.40099999999995	53.0	sedimentary rocks | paleozoic sedimentary rocks | 

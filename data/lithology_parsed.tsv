@@ -13,6 +13,10 @@ Latitude	Longitude	Hash	Lithology	Age	Age Uncert	Unparsed Lithology
 64.81667	-18.81667	64.81667;-18.81667		NaN	NaN	 |  | 
 65.7763	-22.39488	65.7763;-22.39488	basalt, volc, ign, 	34.29	32.0	mafic volcanic rocks | cenozoic volcanic rocks | 
 63.66666	-19.1	63.66666;-19.1		NaN	NaN	 |  | 
+63.06682	-151.00673	63.06682;-151.00673	sed, 	133.65	68.0	sedimentary rocks | mesozoic sedimentary rocks | 
+35.88029	76.51263	35.88029;76.51263	sed, 	305.40099999999995	53.0	sedimentary rocks | paleozoic sedimentary rocks | 
+28.59419	83.9889	28.59419;83.9889	met, 	721.9	278.0	crystalline metamorphic rocks | precambrian-phanerozoic crystalline metamorphic rocks | 
+35.23708	74.58927	35.23708;74.58927	sed, 	721.9	278.0	sedimentary rocks | precambrian-phanerozoic sedimentary rocks | 
 72.4	20.0	72.4;20		NaN	NaN	na | na | na
 76.0	20.0	76;20		NaN	NaN	na | na | na
 64.15332	-16.40858	64.15332;-16.40858		NaN	NaN	 |  | 
@@ -122,9 +126,6 @@ Latitude	Longitude	Hash	Lithology	Age	Age Uncert	Unparsed Lithology
 78.9325	11.835	78.9325;11.835	siliciclast, shale, carb, sed, 	287.551	36.0	mudstone-carbonate-sandstone | paleozoic sedimentary rocks | 
 78.18546	15.76243	78.18546;15.76243	siliciclast, shale, carb, sed, 	49.95	16.0	mudstone-carbonate-sandstone | cenozoic sedimentary rocks | 
 49.03568	-122.71367	49.03568;-122.71367	sed, 	2.58	NaN	sedimentary rocks | cenozoic sedimentary rocks | 
--77.9	160.92	-77.9;160.92	basalt, volc, ign, 	173.15	28.0	mafic volcanic rocks | mesozoic volcanic rocks | 
--77.54999	160.0897	-77.54999;160.0897	basalt, volc, ign, 	173.15	28.0	mafic volcanic rocks | mesozoic volcanic rocks | 
--77.85	160.92	-77.85;160.92	basalt, volc, ign, 	173.15	28.0	mafic volcanic rocks | mesozoic volcanic rocks | 
 43.7844	-88.7879	43.7844;-88.7879	sed, 	395.351	143.0	sedimentary rocks | paleozoic sedimentary rocks | 
 36.56961	74.61982	36.56961;74.61982	plut, ign, 	158.951	93.0	intrusive igneous rocks | mesozoic intrusive rocks | 
 44.54366	-72.83489	44.54366;-72.83489	siliciclast, shale, carb, sed, 	721.9	278.0	mudstone-carbonate-sandstone-conglomerate | precambrian-phanerozoic sedimentary rocks | 
@@ -170,6 +171,8 @@ NaN	NaN	NaN;NaN		NaN	NaN	na | na | na
 60.26449	-139.10915	60.26449;-139.10915	sed, 	422.15	63.0	sedimentary rocks | paleozoic sedimentary rocks | 
 60.4266	18.186	60.4266;18.186		NaN	NaN	na | na | na
 63.74989	18.1544	63.74989;18.1544	sed, 	2050.0	450.0	sedimentary rocks | paleoproterozoic sedimentary rocks | 
+74.514365	-20.624344	74.514365;-20.624344	siliciclast, shale, carb, sed, 	159.55	15.0	marl,conglomerate,sandstone,shale | mesozoic sedimentary rocks | 
+74.510159	-20.645018	74.510159;-20.645018	siliciclast, shale, carb, sed, 	159.55	15.0	marl,conglomerate,sandstone,shale | mesozoic sedimentary rocks | 
 28.58436	83.98884	28.58436;83.98884	met, 	721.9	278.0	crystalline metamorphic rocks | precambrian-phanerozoic crystalline metamorphic rocks | 
 -43.4607	170.1861	-43.4607;170.1861	siliciclast, shale, sed, 	2.58	NaN	unconsolidated sand, gravel and mud | cenozoic sedimentary rocks | 
 78.9099	11.8083	78.9099;11.8083	siliciclast, shale, carb, sed, 	287.551	36.0	mudstone-carbonate-sandstone | paleozoic sedimentary rocks | 
@@ -191,7 +194,6 @@ NaN	NaN	NaN;NaN		NaN	NaN	na | na | na
 -46.7631	-73.8184	-46.7631;-73.8184		NaN	NaN	 | phanerozoic ice | 
 77.07824	15.30863	77.07824;15.30863	sed, volc, ign, 	769.4	231.0	sedimentary and volcanic rocks | neoproterozoic sedimentary and volcanic rocks | 
 45.86605	6.8593	45.86605;6.8593	plut, ign, 	305.40099999999995	53.0	intrusive igneous rocks | paleozoic intrusive rocks | 
--76.98366	161.52648	-76.98366;161.52648	basalt, volc, ign, 	173.15	28.0	mafic volcanic rocks | mesozoic volcanic rocks | 
 44.04642	7.00557	44.04642;7.00557	sed, 	173.15	28.0	sedimentary rocks | mesozoic sedimentary rocks | 
 70.0	-30.0	70;-30		NaN	NaN	 | phanerozoic ice | 
 61.12586	6.52565	61.12586;6.52565		NaN	NaN	na | na | na
