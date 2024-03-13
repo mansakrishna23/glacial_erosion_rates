@@ -43,7 +43,7 @@ rsquared(x,y,line_y) = 1 - nansum((y .- line_y).^2)  / nansum((y .- nanmean(y)).
 ## --- Slope vs erosion rate, colored by glacier type (Continental, Alpine, etc.),
 
 hst = plot(framestyle=:box,
-    xlabel="Regional slope [m/m]",
+    xlabel="Regional average hillslope [m/m]",
     ylabel="Erosion rate [mm/yr]",
     yscale=:log10,
     fontfamily=:Helvetica,
@@ -177,7 +177,7 @@ display(hlt)
 ## --- Slope vs erosion rate, colored by measurement method (Cosmogenic, Volumetric, etc.)
 
 hsm = plot(framestyle=:box,
-    xlabel="Regional slope [m/m]",
+    xlabel="Regional average hillslope [m/m]",
     ylabel="Erosion rate [mm/yr]",
     yscale=:log10,
     fontfamily=:Helvetica,
@@ -229,7 +229,7 @@ display(hsm)
 ## --- Precipitation vs erosion rate, colored by measurement method (Cosmogenic, Volumetric, etc.)
 
 hpm = plot(framestyle=:box,
-    xlabel="Precipitation [mm/yr]",
+    xlabel="Average annual precipitation [mm/yr]",
     ylabel="Erosion rate [mm/yr]",
     yscale=:log10,
     fontfamily=:Helvetica,

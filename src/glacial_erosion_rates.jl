@@ -116,7 +116,7 @@ display(hl)
 ## --- Slope vs erosion rate, colored by glacier type (Continental, Alpine, etc.),
 
 hs = plot(framestyle=:box,
-    xlabel="Regional slope [m/m]",
+    xlabel="Regional average hillslope [m/m]",
     ylabel="Erosion rate [mm/yr]",
     yscale=:log10,
     fontfamily=:Helvetica,
@@ -165,7 +165,7 @@ display(hs)
 ## --- Precipitation
 
 hp = plot(framestyle=:box,
-    xlabel="Precipitation [mm/yr]",
+    xlabel="Average annual precipitation [mm/yr]",
     ylabel="Erosion rate [mm/yr]",
     yscale=:log10,
     fontfamily=:Helvetica,
